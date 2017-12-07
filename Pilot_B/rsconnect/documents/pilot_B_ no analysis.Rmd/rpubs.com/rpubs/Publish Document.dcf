@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/337173/12bf311f7cc140778a74c226d5efcf97
+bundleId: https://api.rpubs.com/api/v1/document/337173/12bf311f7cc140778a74c226d5efcf97
+url: http://rpubs.com/Yochais/337173
+when: 1512637062.54207

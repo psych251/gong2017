@@ -59,15 +59,15 @@ In order to obtain 80%, 90%, and 95% power to observe the stronger effect of age
 
 ![](t_test_pwr_95.png)
 
-**Feasability-** Pliot participant completed the task in about 10 minutes. In light of the required sample sizes shown above, acheiving even 80% power would require too large a deviation from the proposed budget. To keep the cost under \$100 allocated to this project, the replication study will have to be powered to observe the stronger effect, that of older adults being more generous in time donation to relatives compared to young adults, in a *one-tailed* test.
+**Feasability-** Pliot participant completed the task in about 10 minutes. In light of the required sample sizes shown above, acheiving even 80% power for a two-tailed test would require too large a deviation from the proposed budget. To keep the cost within this project's budget, the replication study will have to be powered to observe the stronger effect, that of older adults being more generous in time donation to relatives compared to young adults, in a *one-tailed* test.
 
 ###Planned Sample
 
-The above mentioned power calculation suggests that a sample consisting of **39 older adults** (aged 60 or older), and **39 younger adults** (aged 35 or younger) will suffice to achieve 75% power to detect the effect of interest in a one-tailed test (see below). As a note, this is equvilant of having 63% power to observe the effect in a two-tailed test. 
+The above mentioned power calculation suggests that a sample consisting of **45 older adults** (aged 55 or older), and **45 younger adults** (aged 35 or younger) will suffice to achieve 80% power to detect the effect of interest in a one-tailed test (see below). As a note, this is equvilant of having 70% power to observe the effect in a two-tailed test. 
 
 We will rely on Amazon's mechanical Turk for data colelction, and sample only U.S residents to minimize the chance that participants do not read English. Further, older participants will be recruited using the premium qualifications to speed-up data collection and avoid spending a large portion of the budget on non-qualifying participants taking the screener survey.
 
-![](t_test_pwr_75_oneTail.png)
+![](t_test_pwr__80neTail.png)
 
   
 ###Materials
@@ -144,7 +144,7 @@ Fifth, the original authors fitted the hyperbolic discount function to the data 
 
 Sixth, the authors do not report how they dealt with missing values for individual participants. I will remove participants with missing *AUC* values (after applying the exclusion criteria reported in the paper) from the analysis altogether.
 
-Seventh, the age range in the young-adult group in the original paper is 18-44. I am restricting this to be under 35. That is becuase in the literature, people above 35 are typically considered middle aged, or at the very least not "young" adults.
+Seventh, the age range in the young-adult group in the original paper is 18-44. I am restricting this to be under 35. That is becuase in the literature, people above 35 are typically considered middle aged, or at the very least not "young" adults. For the older adult group, in order to recruit participants efficiently through mechanical Turk's 'premium' qualification, the minimal age in the replication study's older adult group is set to 55 becuase the platform does not allow to screen only for participants older than 55.
   
 ### Methods Addendum (Post Data Collection)
 To assure participant's privacy, indetifiable information (IP addresses and MTurk IDs) was manually removed from the raw data prior to analysis. This was done to allow the data to be shared publicly. 
@@ -423,6 +423,14 @@ med_plot1=ggplot(data=med_table_plot, aes(x=soc_dist, y=med_amnt, color=`Age-Kin
   ylab("Median group amount, moneyX1000 or days")+
   ggtitle("Donation amounts by social distance for older and younger adults")+
   ggthemes::theme_few()
+
+# create dataset of "nu" values for plotting the line
+df_nu=data.frame(
+  age_kinship=c(rep('old-nonrel', 200), rep('old-rel', 200), rep('young-nonrel', 200), rep('young-rel', 200)),
+  donation=c(rep('mon',100), rep('time',100), rep('mon',100), rep('time',100), rep('mon',100), rep('time',100), rep('mon',100), rep('time',100)),
+  
+  
+)
 
 ```
 
