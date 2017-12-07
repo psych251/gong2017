@@ -100,7 +100,7 @@ Participants then proceeded to the hypothetical donation task reported above.
 
 
 ###Analysis Plan
-As a result of the replication study being done online, the two datasets (one with data from older participants and another with younger participants' data) first have to be merged. After this merger, the analysis proceeds as follows:
+As a result of the replication study being done online, to assure participant's privacy, indetifiable information (Location, IP addresses and MTurk IDs) will be manually removed from the raw data prior to analysis. This is done to allow the data to be shared publicly. In addition, the two datasets (one with data from older participants and another with younger participants' data) first have to be merged. After this merger, the analysis proceeds as follows:
 
 The analysis is based on fitting hyperbolic discount curves for each individual in each of the 2(donation form) X 2(kinship) conditions. This is done first on the group median values to assess the overall appropriateness of the function. 
 
@@ -147,14 +147,13 @@ Sixth, the authors do not report how they dealt with missing values for individu
 Seventh, the age range in the young-adult group in the original paper is 18-44. I am restricting this to be under 35. That is becuase in the literature, people above 35 are typically considered middle aged, or at the very least not "young" adults. For the older adult group, in order to recruit participants efficiently through mechanical Turk's 'premium' qualification, the minimal age in the replication study's older adult group is set to 55 becuase the platform does not allow to screen only for participants older than 55.
   
 ### Methods Addendum (Post Data Collection)
-To assure participant's privacy, indetifiable information (IP addresses and MTurk IDs) was manually removed from the raw data prior to analysis. This was done to allow the data to be shared publicly. 
+
 
 #### Pilot B Sample
-  In Pilot B, 32 mTurk workers completed a screener survey. Of these, 8 participants (7 younger adults (age<35) and 1 older adults (age>60)) Completed the experimental task.
+  In Pilot B, 32 mTurk workers completed a screener survey. Of these, 8 participants (7 younger adults (age<35) and 1 older adults (age>60)) Completed the experimental task. No inferrential analysis was run on this sample, the code was tested on a different sample. 
 
 ### Data preparation
 
-Data preparation following the analysis plan.
 	
 ```{r include=TRUE, results='hide', error=FALSE, warning=FALSE, message=FALSE}
 ####Load Relevant Libraries and Functions
