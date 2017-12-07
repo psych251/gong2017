@@ -67,7 +67,7 @@ The above mentioned power calculation suggests that a sample consisting of **45 
 
 We will rely on Amazon's mechanical Turk for data colelction, and sample only U.S residents to minimize the chance that participants do not read English. Further, older participants will be recruited using the premium qualifications to speed-up data collection and avoid spending a large portion of the budget on non-qualifying participants taking the screener survey.
 
-![](t_test_pwr__80neTail.png)
+![](t_test_pwr_80_oneTail.png)
 
   
 ###Materials
@@ -425,13 +425,17 @@ med_plot1=ggplot(data=med_table_plot, aes(x=soc_dist, y=med_amnt, color=`Age-Kin
   ggthemes::theme_few()
 
 # create dataset of "nu" values for plotting the line
-df_nu=data.frame(
-  age_kinship=c(rep('old-nonrel', 200), rep('old-rel', 200), rep('young-nonrel', 200), rep('young-rel', 200)),
-  donation=c(rep('mon',100), rep('time',100), rep('mon',100), rep('time',100), rep('mon',100), rep('time',100), rep('mon',100), rep('time',100)),
-  
-  
-)
+#df_nu=data.frame(
+#  age_kinship=c(rep('old-nonrel', 200), rep('old-rel', 200), rep('young-nonrel', 200), rep('young-rel', 200)),
+#  donation=c(rep('mon',100), rep('time',100), rep('mon',100), rep('time',100), rep('mon',100), rep('time',100), #rep('mon',100), rep('time',100))
+#)
 
+#df_nu$nu=c(NULL)
+#ifelse(df_nu$age_kinship=='old-nonrel', 
+ #      for(i in 1:100){
+#        df$nu=(med_smry[1,4]/(1+med_smry[1,5]*i))
+ #      },
+  #     NA)
 ```
 
 As a necessary first step, I first extracted the median donation values for each age group in each of the four donation X kinship conditions. Plotting the data, it appears that compared to the median donation values in the origianl study, values in this small pilot sample were fairly similar, yet far less variable (see figure 2.b).
