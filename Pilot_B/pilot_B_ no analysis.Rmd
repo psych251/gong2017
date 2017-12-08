@@ -414,7 +414,7 @@ kable(med_smry, digits = 2, align = "c", caption = "Estimated Parameters and Goo
 med_table_plot=med_table2%>%unite('Age-Kinship', c('age_grp', 'kinship'), sep=" - ")
 
 med_plot1=ggplot(data=med_table_plot, aes(x=soc_dist, y=med_amnt, color=`Age-Kinship`))+
-  geom_point(position = "dodge", aes(shape=`Age-Kinship`))+
+  geom_point(data=med_table_plot, position = "dodge", aes(x=soc_dist, y=med_amnt, color=`Age-Kinship`,shape=`Age-Kinship`))+
   #geom_smooth(method = "lm", formula = y~poly(x,1),se=F)+
   ylim(0,100)+
   facet_grid(donation~.)+
@@ -422,19 +422,121 @@ med_plot1=ggplot(data=med_table_plot, aes(x=soc_dist, y=med_amnt, color=`Age-Kin
   ylab("Median group amount, moneyX1000 or days")+
   ggtitle("Donation amounts by social distance for older and younger adults")+
   ggthemes::theme_few()
+```
 
-# create dataset of "nu" values for plotting the line
-#df_nu=data.frame(
-#  age_kinship=c(rep('old-nonrel', 200), rep('old-rel', 200), rep('young-nonrel', 200), rep('young-rel', 200)),
-#  donation=c(rep('mon',100), rep('time',100), rep('mon',100), rep('time',100), rep('mon',100), rep('time',100), #rep('mon',100), rep('time',100))
-#)
+```{r, prediction lines include=TRUE, results='hide', error=FALSE, warning=FALSE}
+# create datasets of "nu" values for plotting the line
+#old_rel_mon 
+nu_oldrel_mon=data.frame(
+  age_kinship=c(rep('old-rel', 100)),
+  donation=c(rep('mon',100)),
+  distance=c(1:100)
+)
 
-#df_nu$nu=c(NULL)
-#ifelse(df_nu$age_kinship=='old-nonrel', 
- #      for(i in 1:100){
-#        df$nu=(med_smry[1,4]/(1+med_smry[1,5]*i))
- #      },
-  #     NA)
+#old_nonrel_mon 
+nu_oldnonrel_mon=data.frame(
+  age_kinship=c(rep('old-nonrel', 100)),
+  donation=c(rep('mon',100)),
+  distance=c(1:100)
+)
+
+#old_rel_time 
+nu_oldrel_time=data.frame(
+  age_kinship=c(rep('old-rel', 100)),
+  donation=c(rep('time',100)),
+  distance=c(1:100)
+)
+
+#old_nonrel_time 
+nu_oldnonrel_time=data.frame(
+  age_kinship=c(rep('old-nonrel', 100)),
+  donation=c(rep('time',100)),
+  distance=c(1:100)
+)
+
+#young_rel_mon 
+nu_youngrel_mon=data.frame(
+  age_kinship=c(rep('young-rel', 100)),
+  donation=c(rep('mon',100)),
+  distance=c(1:100)
+)
+
+#young_nonrel_mon 
+nu_youngnonrel_mon=data.frame(
+  age_kinship=c(rep('young-nonrel', 100)),
+  donation=c(rep('mon',100)),
+  distance=c(1:100)
+)
+
+#young_rel_time 
+nu_youngrel_time=data.frame(
+  age_kinship=c(rep('young-rel', 100)),
+  donation=c(rep('time',100)),
+  distance=c(1:100)
+)
+
+#young_nonrel_time 
+nu_youngnonrel_time=data.frame(
+  age_kinship=c(rep('young-nonrel', 100)),
+  donation=c(rep('time',100)),
+  distance=c(1:100)
+)
+ 
+#populte with nu predictions based on fitting
+#oldrel_mon 
+for(i in 1:100){
+        nu_oldrel_mon$nu[i]=(med_smry[1,4]/(1+med_smry[1,5]*i))
+}
+
+#oldnonrel_mon 
+for(i in 1:100){
+        nu_oldnonrel_mon$nu[i]=(med_smry[2,4]/(1+med_smry[2,5]*i))
+       }
+
+#oldrel_time 
+for(i in 1:100){
+        nu_oldrel_time$nu[i]=(med_smry[3,4]/(1+med_smry[3,5]*i))
+}
+
+#oldnonrel_time 
+for(i in 1:100){
+        nu_oldnonrel_time$nu[i]=(med_smry[4,4]/(1+med_smry[4,5]*i))
+}
+
+#youngrel_mon 
+for(i in 1:100){
+        nu_youngrel_mon$nu[i]=(med_smry[5,4]/(1+med_smry[5,5]*i))
+}
+
+#youngnonrel_mon 
+for(i in 1:100){
+        nu_youngnonrel_mon$nu[i]=(med_smry[6,4]/(1+med_smry[6,5]*i))
+}
+
+#youngrel_time 
+for(i in 1:100){
+        nu_youngrel_time$nu[i]=(med_smry[7,4]/(1+med_smry[7,5]*i))
+}
+
+#youngnonrel_time 
+for(i in 1:100){
+        nu_youngnonrel_time$nu[i]=(med_smry[8,4]/(1+med_smry[8,5]*i))
+}
+
+#combine all to one dataset
+med_pred=full_join(nu_oldrel_mon,nu_oldrel_time, by=c('age_kinship', 'donation','distance', 'nu'))%>%full_join(nu_oldnonrel_mon,by=c('age_kinship', 'donation', 'distance','nu'))%>%full_join(nu_oldnonrel_time,by=c('age_kinship', 'donation','distance', 'nu'))%>%full_join(nu_youngrel_mon,by=c('age_kinship', 'donation','distance', 'nu'))%>%full_join(nu_youngrel_time,by=c('age_kinship', 'donation','distance', 'nu'))%>%full_join(nu_youngnonrel_mon,by=c('age_kinship', 'donation','distance', 'nu'))%>%full_join(nu_youngnonrel_time,by=c('age_kinship', 'donation', 'distance','nu'))
+
+#plot
+med_plot1=ggplot(data = med_pred)+
+  geom_point(data=med_table_plot, position = "dodge", aes(x=soc_dist, y=med_amnt,shape=`Age-Kinship`))+
+  geom_line(data = med_pred, aes(x=distance, y=nu, color=age_kinship),size=1)+
+  ylim(0,105)+
+  facet_grid(donation~.)+
+  xlab("Social Distance")+
+  ylab("Median group amount, moneyX1000 or days")+
+  ggtitle("Donation amounts by social distance for older and younger adults")+
+  facet_grid(donation~.)+
+  ggthemes::theme_few()
 ```
 
 As a necessary first step, I first extracted the median donation values for each age group in each of the four donation X kinship conditions. Plotting the data, it appears that compared to the median donation values in the origianl study, values in this small pilot sample were fairly similar, yet far less variable (see figure 2.b).

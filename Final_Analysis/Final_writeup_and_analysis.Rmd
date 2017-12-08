@@ -1,0 +1,157 @@
+---
+title: "Replication of Study 1 by Gong, Zhang & Fung (2017, Journals of Gerontology: Series B)"
+author: "Yochai Z. Shavit (yochais@stanford.edu)"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float:
+      collapsed: false
+---
+
+##Introduction
+
+  Socioemotional Selectivity Theory (SST- Carstensen, 2006) postulates that due to a sense of limited time left in life older adults are motivated to engage with meaningful activities over ones that might provide future benefits. Yet, despite being thought of as a meaningful activity (Greenfield & Marks, 2004), older adults do not volunteer in higher rates compared to younger cohorts (U.S Bureau of Labor, 2015). The relatively low volunteer rates among older adults is especially surprising since laboratory experiments found that older adults show more prosocial behaviors compared to younger adults, and are more concerned with the wellbeing of others in need (Sze, Gyurak, Goodkind, &  Levenson, 2012; Beadle, Sheehan, Dahlben, & Gutchess, 2013;  Hubbard, Harbaugh, Srivastava, Degras, & Mayr, 2016)
+
+  The study I attempt to replicate by Gong, Zhang, & Fung (2017) provides a possible explanation for this apparent discrepancy. In a hypothetical donation task, Gong and colleagues asked younger (N=89) and older (N=66) Hong Kong Chinese community membersto indicate how much money and time they are willing to donate to a person in need, with this person being progressively more socially distant to them. They found: a *weak qualified* main effect ($\eta_p^2$=0.05) of age such that older adults were less generous than younger adults when averaging across donation (money or time) and kinship (relative or non-relative) types. However, they found a 3-way Age group X Donation X Kinship interaction showing that *when donating their time to relatives, older adults were more generous than younger adults*. This post-hoc test had a medium effect size (*Cohen's D*=`r round(((2*3.22)/sqrt(145)),2)`, calculated based on reported t-statistic of $t_{(145)}$=3.22). **the qualified main effect of age group and the post-hoc test suggesting that older adults are more generous than younger adults when donating time to relatives are the two target findings for this replication**. 
+  
+  In addition, their post-hoc comparisons revealed that older adults, compared to younger adults, were less generous to non-relatives in monetary donations but the groups did not differ in generousity towards relatives in this donation condition. In contrast, older adults were less generous than younger adults when donating time to non-relatives (but were more generous to relatives as noted above). 
+  
+  Gong, Zhang and Fung were also interested in comparing the social discount rate of older and younger adults in each of the conditions. They found no main effects of social discounting, and an Age group X Donation type interaction. Post-hoc tests revealed that older and younger adults' social discount rates did not differ when donating time, and that compared to younger adults older adults had higher discount rates when donating money to relatives and non-relatives alike. They conclude that their findings regarding donation amounts and social discount rates are in accord with SST- older adults are affected more than younger adults by kinship and degree of social closeness, though these effects depend on the context of giving.
+
+##Methods
+
+###Power Analysis
+In total, within each of the two age groups (younger- those aged 35 and under, and older adults- people aged 60 and older), each participant is providing `r 7*2*2` measures: for each of seven targets (of varying social distances) participants indicate how much money and time they are willing to donate. They report this for both relatives and non-relatives. Howere *these measures are NOT the vaules on which the analysis is run*. These values are used to computed group and individual hyperbplic discount curves of which *AUC* values represent a person's overall donation, and $\kappa$ values reflect a person's discount rate. This procedure results in each participant having 4 *AUC* values and 4 $\kappa$ values: one for each of the donation X kinship conditions. 
+
+The original authors ran their analyses using a mixed (within/between subjects) ANOVAs, where age group was a between subject variable, and donation form and kinship were within subject variables. The dependent variable in the first ANOVA was the log-transformed Area Under the Curve (*AUC*) obtained after fitting a hyperbolic discount curve to individuals donation data. This area represents the total amount participants are willing to donate in each of the four donation form X kinship conditions. 
+
+
+Upon finding a 3-way interaction between age group, donation form and kinship, the authors conducted post-hoc test and found that when donating their time to relatives, older adults were more generous than younger adults. **This mixed design repeated measure ANOVA of AUC values is the main interest for the purpose of this replication, with the post hoc test comparing older and younger adult's AUC values when donating time to relatives**
+
+The original effect sizes of interest were: $\eta_p^2$=0.05 for the qualified main age group effect effect, and *D*=`r round(((2*3.22)/sqrt(145)),2)` for the post-hoc t-test on generosity of time donations for relatives. 
+
+**Replication would be considered successeful if older adults are found to be ststistically more generous than younger adults when donating time to relatives, in a post-hoc *one-tailed* t-test. That is, if the mean *AUC* value for older adults in the time donation X relative condition is higher than that of younger adults** 
+
+Power analysis using G*Power version 3.1.2.9 suggested that in order to obtain 80%, 90% and 95% power for the main effect of age, the required sample sizes are 154, 204, and 252 respectively. Details can be found here:
+
+**Age group main effect- 80% power**
+
+![](age_grp_main_pwr_80.png)
+
+**Age group main effect- 90% power**
+
+![](age_grp_main_pwr_90.png)
+
+**Age group main effect- 95% power**
+
+![](age_grp_main_pwr_95.png) 
+
+In order to obtain 80%, 90%, and 95% power to observe the stronger effect of age group on generosity in time donations to relatives (Older>Younger), requires sample sizes of 114 (57 per group), 152 (76 per group), and 188 (94 per group) respectively. Details can be found here:
+
+**age group time donations, relatives- 80% power**
+
+![](t_test_pwr_80.png)
+
+
+**age group time donations, relatives- 90%** 
+
+![](t_test_pwr_90.png)
+
+
+**age group time donations, relatives- 95%** 
+
+![](t_test_pwr_95.png)
+
+**Feasability-** Pliot participant completed the task in about 10 minutes. In light of the required sample sizes shown above, acheiving even 80% power for a two-tailed test would require too large a deviation from the proposed budget. To keep the cost within this project's budget, the replication study was powered to observe the stronger effect, that of older adults being more generous in time donation to relatives compared to young adults, to 80% in a *one-tailed* test.
+
+###Planned Sample
+
+The above mentioned power calculation suggests that a sample consisting of **45 older adults** (aged 55 or older), and **45 younger adults** (aged 35 or younger) suffices to achieve 80% power to detect the effect of interest in a one-tailed test (see below). As a note, this is equvilant of having 70% power to observe the effect in a two-tailed test. 
+
+We relied on Amazon's mechanical Turk for data colelction, and sample only U.S residents to minimize the chance that participants do not read English. Further, older participants were recruited using the premium qualifications to speed-up data collection and avoid spending a large portion of the budget on non-qualifying participants taking the screener survey.
+
+![](t_test_pwr_80_oneTail.png)
+
+###Materials
+
+In this study, age group is treated as a between subjects independent variable. Participants in both age groups completed the same experimental task. At first, the were given the following instruction:
+
+> "The following task asks you to imagine that you have a list of 100 relatives (or non-relatives) arranged in descending order of their closeness with you. The person at position #1 is your closest relative (or non-relative), while the person at position #100 is a relative (or nonrelative) you may know but are not close at all. You do not have to actually create the list-- just imagine that you have done so. Next you will be asked to answer questions regarding these relatives (or non-relatives) at a given position."
+
+Participants were then asked to indicate how much money and time they would be willing to hypothetically donate to a person in a given position (N) on that list (N=1,2,5,10,20,50, and 100). The promt read as follows:
+
+> "Imagine that the relative (or non-relative) at position N on your list is now hospitalized. He/she needs to be accompanied and taken care of in the hospital, as well as a large amount of money to pay for the medical expense. If you now own 100 thousand of Hong Kong dollars and 100 days of vacation, how much money would you donate to him/her, and how many days would you spend taking care of him/her?"
+
+These materials are used verbatim in the replication attempt, with the exception of replacing "Hong Kong dollars" with "U.S dollars". The original authors' advice was sought in order to decide whether to change the amount to the $U.S equivalent of 100 thousand Hong Kong dollars (~18 thousand U.S dollars). The first author indicated that it is better to retain the value of 100 thousand and change only the currency.
+
+###Procedure	
+
+Participants first provided demographic information regarding their age, gender, level of education and household income. In addition, participants were asked to "*directly estimate the number of important relatives/ friends*" that they have, since this was seen as an important control variable.
+
+Participants then completed the Chinese version of the Alzheimer's Disease Assessment Scale-Cognitive Subscale (ADAS-Cog). Since this is an in-person assesment, **this stage is not followed in the replication study**. 
+
+Participants then proceeded to the hypothetical donation task reported above. 
+
+**For the replication attempt**- In order to recruit participants on Amazon's Mechanical Turk, two surveys were set on using the Qualtrics platform. one survey was desigend to allow only people who indicate their age as being over 60 to take the survey, while the other was designed to allow only those who indicate their age as being under 35 to proceed to the survey. Participants who accept the HIT, are compensated \$0.1 for taking the short demographic survey (including age and the demographic variables detailed above), and could opt to recieve a bonus payment of \$1.21 by completeing the experimental task. 
+
+**links to working surveys**: 
+
+[Older adults](https://stanforduniversity.qualtrics.com/jfe/form/SV_6zlROG9kWBWYJ1j)
+
+[Younger adults](https://stanforduniversity.qualtrics.com/jfe/form/SV_42wrkRnk0RShFQN)
+
+###Analysis Plan
+As a result of the replication study being done online, to assure participant's privacy, indetifiable information (Location, IP addresses and MTurk IDs) will be manually removed from the raw data prior to analysis. This is done to allow the data to be shared publicly. In addition, the two datasets (one with data from older participants and another with younger participants' data) first have to be merged. After this merger, the analysis proceeds as follows:
+
+The analysis is based on fitting hyperbolic discount curves for each individual in each of the 2(donation form) X 2(kinship) conditions. This is done first on the group median values to assess the overall appropriateness of the function. 
+
+> "To analyze the donation data, we first modeled the group donation data. For each age X donation form X kinship cell, a hyperbolic discount function (i.e., Equation 1) was fit to the group median values (Jones & Rachlin, 2006; Rachlin & Jones, 2007, 2008) over the seven social distances (N = 1, 2, 5, 10, 20, 50, and 100):
+
+> $\nu$ = V / (1 + $\kappa$N) $_{(1)}$
+
+> where V is the undiscounted reward value, v is the reward value that a person would like to forgo for the benefit for someone at a social distance N, and k is a constant indexing degree of social discounting (i.e., discount rate) across social distances. Following the convention of the literature, group median values instead of mean values were used"
+
+After assuring that the hypoerbolic discount curve fit the group data well by computing the Root Mean Square Error (RMSE) and variance explained ($R^2$), the same curve is fit for each participant, extracting the values for Area under the curve (*AUC*) as an indicator of overall generosity, and discount rate ($\kappa$):
+
+> "Once the appropriateness of the hyperbolic discount function was confirmed for group data, we then conducted the same fitting process to individual data to get the discount rate ($\kappa$) and the *AUC* for each participant under different conditions. Again following the convention of the literature, individual data that did not fit the hyperbolic discount function were excluded from further analyses (Vuchinich & Simpson, 1998). The individuals' $\kappa$ and *AUC* values were then normalized by a natural logarithm transformation (e.g., Margittai et al., 2015), and transformed values that exceeded ±3 SDs were treated as outliers."
+
+The individual *AUC* and $\kappa$ values are then entered to a dataset comprising of 4 rows per participant corresponding to the four 2X2 cells. To analyze these data:
+
+> "the transformed individual *AUC* values and $\kappa$ values were submitted respectively to a 2 (age: younger and older) X 2 (donation form: money and time) X 2 (kinship: relatives and nonrelatives) mixed design, repeated measures ANOVA (and post hoc tests), with and without controlling for demographic variables"
+
+**Key analysis of interest-** The mixed design repeated measure ANOVA of *AUC* values is the main interest for the purpose of this replication, with the post hoc test comparing older and younger adults' *AUC* values when donating time to relatives. 
+
+"Main" effect of age will be taken as the affect of Age when controlling for all other main independent variables and their interactions (type III sum of squares, as is typically used in Statistical programs). The authors did not specify the type of post-hoc test used to examine group differences in each condition, so no correction will be applied in the replication attemp. Further, as mentioned in the power-analysis section, the post-hoc test will be a one-tailed t-test.
+
+Though not of main interest for this replication, I will also run the same ANOVA and post-hoc procedures on individual $\kappa$ values.
+
+**Additional analysis for this data-** Since this is a repeated measures dataset, a statistical procedure that is more robust to imbalances in the dataset is a mixed-effects linear model. I plan to run such a model setting a random intercept (different means) for individuals' AUC values and using planned orthogonal contrasts to test the specific group means difference of interest. Using planned contrasts, I first set the intercept to reflect the overall mean *AUC* value across age groups, donation and kinship conditions. In this case, the effect of age group reflects the "main" effect of age group. The contrast coding for the "age group" reflects the expectation that across donation and kinship conditions, the expectation is that younger adults are more generous.
+
+Then, providing that the is a significant 3-way interaction as was found in the original paper, I will set the intercept to reflect the *AUC* value for older adults when donating time to relatives. In this case, the "simple" effect of age group reflects the difference between older and younger adults when donating time to relatives. Any interactions between age group and condition indicate that that difference (or lack there of) may be significanlty reduced, non-present, or even flipped in depending on the particular donation X kinship combination.  
+
+###Differences from Original Study
+
+This replication is different form the original study in a number of ways: 
+
+First, the original study sampled Honk-Kong Chinese, which might have different prosocial behavior patterns than U.S citizens. However, the authors did not state in their study that their result should only extend to a particular cultural/ethnic group. 
+
+Second, as noted above, the amount of money participants are instructed to imagine having is different in relative terms. 100 thousand Hong Kong dollars are considerably less valuable (in terms of purchase power) then 100 thousand U.S dollars, even when adjusting to the difference in cost of living between the two countries. However, as stated, the primary author of the original paper instructed the author of this replication to keep the value to 100 thousand and change only the currency. 
+
+Third, the original study was conducted in lab and included a cognitive assesment procedure. The replication is taking place on Amazon's mechanical Turk and does not include cognitive assessment. The decision to drop this assesment was made since the original paper did not find a relationship between performance and cognitive ability, and the first author of the original paper stated in a personal communication that he does not think that this procedure would alter participants' mindsets. 
+
+Fourth, since data for this study is collected on Amazon's Mechanical Turk, I included an additional attention check- after indicating the amount of time and money they are willing to donate to a relative at position 20, participants are asked: "In the last question, your answers referred to the participant in position:" with choice options of 3, 7, 12, 16, 20, 28, and 42. Participants who fail to correctly state "20" are excluded from analysis.
+
+Fifth, the original authors fitted the hyperbolic discount function to the data using Matlabv(version 2015a). I am fitting the data using the "optim" function from the 'stats' package for R. Testing this procedure on simulated data yielded similar results to those obtained by Gong et al (2017).
+
+Sixth, the authors do not report how they dealt with missing values for individual participants. I will remove participants with missing *AUC* values (after applying the exclusion criteria reported in the paper) from the analysis altogether.
+
+Seventh, the age range in the young-adult group in the original paper is 18-44. I am restricting this to be under 35. That is becuase in the literature, people above 35 are typically considered middle aged, or at the very least not "young" adults. For the older adult group, in order to recruit participants efficiently through mechanical Turk's 'premium' qualification, the minimal age in the replication study's older adult group is set to 55 becuase the platform does not allow to screen only for participants older than 55.
+  
+### Methods Addendum (Post Data Collection)
+
+#### Sample
+  ???????????????????????????????????????????????????????????????????????????????????????????
+  
+  
