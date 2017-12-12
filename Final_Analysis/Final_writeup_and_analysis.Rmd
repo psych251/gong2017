@@ -117,6 +117,7 @@ After assuring that the hypoerbolic discount curve fit the group data well by co
 
 > "Once the appropriateness of the hyperbolic discount function was confirmed for group data, we then conducted the same fitting process to individual data to get the discount rate ($\kappa$) and the *AUC* for each participant under different conditions. Again following the convention of the literature, individual data that did not fit the hyperbolic discount function were excluded from further analyses (Vuchinich & Simpson, 1998). The individuals' $\kappa$ and *AUC* values were then normalized by a natural logarithm transformation (e.g., Margittai et al., 2015), and transformed values that exceeded ±3 SDs were treated as outliers."
 
+
 The individual *AUC* and $\kappa$ values are then entered to a dataset comprising of 4 rows per participant corresponding to the four 2X2 cells. To analyze these data:
 
 > "the transformed individual *AUC* values and $\kappa$ values were submitted respectively to a 2 (age: younger and older) X 2 (donation form: money and time) X 2 (kinship: relatives and nonrelatives) mixed design, repeated measures ANOVA (and post hoc tests), with and without controlling for demographic variables"
@@ -150,6 +151,17 @@ Sixth, the authors do not report how they dealt with missing values for individu
 Seventh, the age range in the young-adult group in the original paper is 18-44. I am restricting this to be under 35. That is becuase in the literature, people above 35 are typically considered middle aged, or at the very least not "young" adults. For the older adult group, in order to recruit participants efficiently through mechanical Turk's 'premium' qualification, the minimal age in the replication study's older adult group is set to 55 becuase the platform does not allow to screen only for participants older than 55.
   
 ### Methods Addendum (Post Data Collection)
+-the package `effsize` was added to compute Cohen's D effect size measurement easily.
+
+- to code education level as a numeric variable, the following lines were added (after transforming the writted values): `df_og$edu_lv=as.character(df_og$edu_lv)`, then `df_og$edu_lv=as.numeric(df_og$edu_lv)`.
+
+- in order to fit the hyperbolic discount function, the `optim` function was used with `method="L-BFGS-B"`, and possible V and $\kappa$ values were constrained to be 300 and 100 respectively. Such bounding is sensible given the reported values in Gong et al. (2017) and given the experimental constraints on participant's reported donation values (participants were instructed to enter values between 0-100).
+
+- The pre-registered code had an error: outliers were computed based on raw, rather than log transformed *AUC* and $\kappa$ values. This was corrected in the final analysis. As a result, the sequence for removing outliers was changed a little from the pre-registered version, yet resulted in the same dataset for analysis in which all outliers were removed- thus containing only complete observations. 
+
+- Clarification: Based on the exclusion procedure reported in the original paper, in this replication paper participants for whom the fitting process failed are defined as those with *AUC* and $\kappa$ values calculated to be zero, negative, or otherwise a non-finite number.
+
+
 
 #### Sample
   ???????????????????????????????????????????????????????????????????????????????????????????
@@ -169,6 +181,7 @@ library(pander)
 library(kableExtra)
 library(lme4)
 library(lmerTest)
+library(effsize)
 
 # compute the hyperbolic function
 discount <- function (V, k, N) {
@@ -176,6 +189,7 @@ discount <- function (V, k, N) {
   
   return(nu)
 }
+
 
 # compute RMSE for a given parameter set and data
 data_vs_discount <- function(V, k, N, amount) {
@@ -185,14 +199,15 @@ data_vs_discount <- function(V, k, N, amount) {
   
   return(RMSE)
 }
+
 ```
 
 ####Import data
 ```{r include=TRUE, results='hide', error=FALSE, warning=FALSE, message=FALSE}
 
 #load 'raw' data sets
-df_old=read.csv("presentation_old_raw.csv")
-df_young=read.csv("presentation_young_raw.csv")
+df_old=read.csv("old_final_raw.csv")
+df_young=read.csv("young_final_raw.csv")
 
 #clean each data set
 ## df_old
@@ -228,7 +243,7 @@ df_og=df_og%>%select(-one_of(vars_remove))
 
 #Add age group variable
 df_og$age_grp=recode(df_og$age, "lo:35='young'; 55:hi='old'", as.factor.result = T)
-summary(df_og$age_grp) #-> 1 old, 7 young
+summary(df_og$age_grp) #-> 47 old, 43 young
 
 #Rename variables to be more readable
 df_og=df_og%>%rename(subid=`Response ID`, gender=`gender - Selected Choice`, race=`race - Selected Choice`)
@@ -298,3 +313,725 @@ pander(rel, digits=2, caption = "age group difference in average number of relat
 pander(frnd, digits=2, caption = "age group difference in average number of friends")
 
 ```
+
+In table 1, I compare the two age groups' demographic variables. In the original paper, older adult participants were significanlty older, less educated, and had significanlty more important relatives. There were no significant differences in income nor number of important friends (see figure 1. for original table).
+
+In the replication sample, the older adult group was significantly older ($t_{(87.7)}$=`r round(age$statistic,2)`, *p*=`r round(age$p.value, 3)`) had more relatives ($t_{(56.1)}$=`r round(rel$statistic,2)`, *p*=`r round(rel$p.value, 3)`), and more relatives ($t_{(51.7)}$=`r round(frnd$statistic,2)`, *p*=`r round(frnd$p.value, 3)`) We did not find significant differences between the older and younger samples in levels of income and education, though male to female ratio was different between them ($\chi^2$=`r round(gen$statistic, 2)`, *p*=`r round(gen$p.value, 3)`.
+
+**Figure 1: Gong et al., 2017 descpriptive statistics by age group**
+![](gong_et_al_demog.png)
+
+`r kable(dscrpt2,align='c', caption = "Table 1: decsriptive statistics by age group")`
+
+#### Fitting the curve for age group median values (for each donation X kinship condition)
+```{r median values, include=TRUE, results='hide', error=FALSE, warning=FALSE}
+#create df with monetary amounts divided by 1000 for plotting and analyses (to have the same units for time and money donations)
+df_og2=df_og%>%mutate(rel_1_mon=rel_1_mon/1000, 
+                      rel_2_mon=rel_2_mon/1000, 
+                      rel_5_mon=rel_5_mon/1000, 
+                      rel_10_mon=rel_10_mon/1000, 
+                      rel_20_mon=rel_20_mon/1000, 
+                      rel_50_mon=rel_50_mon/1000, 
+                      rel_100_mon=rel_100_mon/1000, 
+                      nonrel_1_mon=nonrel_1_mon/1000, 
+                      nonrel_2_mon=nonrel_2_mon/1000, 
+                      nonrel_5_mon=nonrel_5_mon/1000, 
+                      nonrel_10_mon=nonrel_10_mon/1000, 
+                      nonrel_20_mon=nonrel_20_mon/1000, 
+                      nonrel_50_mon=nonrel_50_mon/1000, 
+                      nonrel_100_mon=nonrel_100_mon/1000)
+
+#long-form this dataframe
+og_lng2=df_og2%>%
+  gather(condition, amount, c(matches("_mon"),matches("_time"))
+         )%>%
+  separate(condition, c("kin", "soc_dist", "donation"), "_")%>%
+  spread(kin, amount)%>%
+  gather(kinship, amount,
+         rel,nonrel) #-> That works!
+
+#set varaible soc_dist in og_lng to be numeric in both dataframes
+#original df
+og_lng$soc_dist=as.character(og_lng$soc_dist)
+og_lng$soc_dist=as.numeric(og_lng$soc_dist)
+is.numeric(og_lng$soc_dist)
+
+#df for plotting and analysis (og_lng2)
+og_lng2$soc_dist=as.character(og_lng2$soc_dist)
+og_lng2$soc_dist=as.numeric(og_lng2$soc_dist)
+is.numeric(og_lng2$soc_dist)
+
+#create table with original median values
+med_table=og_lng%>%group_by(age_grp,kinship,donation,soc_dist)%>%summarise(med_amnt=median(amount))
+#create table of median values with the tranformed monetary amounts
+med_table2=og_lng2%>%group_by(age_grp,kinship,donation,soc_dist)%>%summarise(med_amnt=median(amount))
+
+#generate plot
+med_plots=ggplot(data=med_table2, aes(x=soc_dist, y=med_amnt, color=age_grp))+
+  geom_point(position = "jitter")+
+  geom_smooth(method = "lm", formula = y~poly(x,2), se=F)+
+  facet_wrap(donation~kinship)+
+  xlab("Social Distance")+
+  ylab("Median group amount, moneyX1000 or days")+
+  ggtitle("Donation amounts by social distance for older and younger adults")+
+  ggthemes::theme_few()
+```
+
+
+
+```{r curve fitting-median values, include=TRUE, results='hide', error=FALSE, warning=FALSE}
+#define dataset
+d=med_table2
+
+#create empty vectors to store values
+age_grp=vector(mode="character",length=0); donation=vector(mode="character",length=0); kinship=vector(mode="character",length=0); V_values=vector(mode="numeric",length=0); k_values=vector(mode="numeric",length=0); RMSE=vector(mode="numeric",length=0); R_sq=vector(mode="numeric",length=0)
+
+#run for each age group, exctract values for donation * kinship conditions
+
+for(i in unique(d$age_grp)){
+  
+  d_mon_rel=d%>%filter(age_grp==i, donation=="mon", kinship=="rel") #-> create temp df to get values from
+  age_grp=c(age_grp,i) #-> store the appropriate age group
+  donation=c(donation, "mon") #-> store the appropriate donation
+  kinship=c(kinship, "rel") #-> store the appropriate kinship
+  optim_discount_wrapper <- function(x) { #-> define discount wrapper to get V, k, and RMSE values for this                                                      condition
+  return(data_vs_discount(V = x[1], k = x[2],  
+                          N = d_mon_rel$soc_dist, 
+                          amount = d_mon_rel$med_amnt))
+}
+
+  opt1=optim(c(100, 0.2), optim_discount_wrapper, method = "L-BFGS-B", lower=c(0,0), upper=c(300,100)) #-> run discount_wrapper
+  V_values=c(V_values,opt1$par[1]) #-> store resulting V_value
+  k_values=c(k_values, opt1$par[2]) #-> store resulting k_value
+  RMSE=c(RMSE, opt1$value) #-> store resulting RMSE value
+  d_mon_rel$pred=discount(V = opt1$par[1], k = opt1$par[2],N = d_mon_rel$soc_dist) #-> store predictions in temp                                                                                          dataset
+  cor1=cor.test(d_mon_rel$med_amnt, d_mon_rel$pred) #-> run cor.test to get correlation of predictions and data
+  R_sq=c(R_sq, (cor1$estimate)^2) #-> square the estimate (pearson's R) to get R^2.
+  
+  
+  d_mon_nonrel=d%>%filter(age_grp==i, donation=="mon", kinship=="nonrel") #-> do all of this for the next donation                                                                               * Kinship condition
+  age_grp=c(age_grp,i)
+  donation=c(donation, "mon")
+  kinship=c(kinship, "nonrel")
+  optim_discount_wrapper <- function(x) {
+  return(data_vs_discount(V = x[1], k = x[2],  
+                          N = d_mon_nonrel$soc_dist, 
+                          amount = d_mon_nonrel$med_amnt))
+}
+
+  opt2=optim(c(100, 0.2), optim_discount_wrapper, method = "L-BFGS-B", lower=c(0,0), upper=c(300,100))
+  V_values=c(V_values,opt2$par[1])
+  k_values=c(k_values, opt2$par[2])
+  RMSE=c(RMSE, opt2$value)
+  d_mon_nonrel$pred=discount(V = opt2$par[1], k = opt2$par[2],N = d_mon_nonrel$soc_dist)
+  cor2=cor.test(d_mon_nonrel$med_amnt, d_mon_nonrel$pred)
+  R_sq=c(R_sq, (cor2$estimate)^2)
+
+
+  d_time_rel=d%>%filter(age_grp==i, donation=="time", kinship=="rel")
+  age_grp=c(age_grp,i)
+  donation=c(donation, "time")
+  kinship=c(kinship, "rel")
+  optim_discount_wrapper <- function(x) {
+  return(data_vs_discount(V = x[1], k = x[2],  
+                          N = d_time_rel$soc_dist, 
+                          amount = d_time_rel$med_amnt))
+}
+
+  opt3=optim(c(100, 0.2), optim_discount_wrapper, method = "L-BFGS-B", lower=c(0,0), upper=c(300,100))
+  V_values=c(V_values,opt3$par[1])
+  k_values=c(k_values, opt3$par[2])
+  RMSE=c(RMSE, opt3$value)
+  d_time_rel$pred=discount(V = opt3$par[1], k = opt3$par[2],N = d_time_rel$soc_dist)
+  cor3=cor.test(d_time_rel$med_amnt, d_time_rel$pred)
+  R_sq=c(R_sq, (cor3$estimate)^2)
+
+  
+  d_time_nonrel=d%>%filter(age_grp==i, donation=="time", kinship=="nonrel")
+  age_grp=c(age_grp,i)
+  donation=c(donation, "time")
+  kinship=c(kinship, "nonrel")
+  optim_discount_wrapper <- function(x) {
+  return(data_vs_discount(V = x[1], k = x[2],  
+                          N = d_time_nonrel$soc_dist, 
+                          amount = d_time_nonrel$med_amnt))
+}
+
+  opt4=optim(c(100, 0.2), optim_discount_wrapper, method = "L-BFGS-B", lower=c(0,0), upper=c(300,100))
+  V_values=c(V_values,opt4$par[1])
+  k_values=c(k_values, opt4$par[2])
+  RMSE=c(RMSE, opt4$value)
+  d_time_nonrel$pred=discount(V = opt4$par[1], k = opt4$par[2],N = d_time_nonrel$soc_dist)
+  cor4=cor.test(d_time_nonrel$med_amnt, d_time_nonrel$pred)
+  R_sq=c(R_sq, (cor4$estimate)^2)
+
+}
+
+#Add all vectors to one dataset
+med_smry=as.data.frame(cbind(`Age group`=age_grp, Donation=donation, Kinship=kinship, V=V_values, k=k_values, `R sqr`=R_sq, RMSE), row.names = F)%>%mutate(V=as.character(V), k=as.character(k), `R sqr`=as.character(`R sqr`), RMSE=as.character(RMSE))%>%mutate(V=as.numeric(V), k=as.numeric(k), `R sqr`=as.numeric(`R sqr`), RMSE=as.numeric(RMSE))
+
+kable(med_smry, digits = 2, align = "c", caption = "Estimated Parameters and Goodness-of-fit Indices of the Hyperbolic Functions, group median values")
+
+#set data to create similar median amounts plots to the one appearing in the original paper.
+med_table_plot=med_table2%>%unite('Age-Kinship', c('age_grp', 'kinship'), sep=" - ")
+
+med_plot1=ggplot(data=med_table_plot, aes(x=soc_dist, y=med_amnt, color=`Age-Kinship`))+
+  geom_point(data=med_table_plot, position = "dodge", aes(x=soc_dist, y=med_amnt, color=`Age-Kinship`,shape=`Age-Kinship`))+
+  #geom_smooth(method = "lm", formula = y~poly(x,1),se=F)+
+  ylim(0,100)+
+  facet_grid(donation~.)+
+  xlab("Social Distance")+
+  ylab("Median group amount, moneyX1000 or days")+
+  ggtitle("Donation amounts by social distance for older and younger adults")+
+  ggthemes::theme_few()
+```
+
+```{r, prediction lines, include=TRUE, results='hide', error=FALSE, warning=FALSE, message=FALSE}
+# create datasets of "nu" values for plotting the line
+#old_rel_mon 
+nu_oldrel_mon=data.frame(
+  age_kinship=c(rep('old-rel', 100)),
+  donation=c(rep('mon',100)),
+  distance=c(1:100)
+)
+
+#old_nonrel_mon 
+nu_oldnonrel_mon=data.frame(
+  age_kinship=c(rep('old-nonrel', 100)),
+  donation=c(rep('mon',100)),
+  distance=c(1:100)
+)
+
+#old_rel_time 
+nu_oldrel_time=data.frame(
+  age_kinship=c(rep('old-rel', 100)),
+  donation=c(rep('time',100)),
+  distance=c(1:100)
+)
+
+#old_nonrel_time 
+nu_oldnonrel_time=data.frame(
+  age_kinship=c(rep('old-nonrel', 100)),
+  donation=c(rep('time',100)),
+  distance=c(1:100)
+)
+
+#young_rel_mon 
+nu_youngrel_mon=data.frame(
+  age_kinship=c(rep('young-rel', 100)),
+  donation=c(rep('mon',100)),
+  distance=c(1:100)
+)
+
+#young_nonrel_mon 
+nu_youngnonrel_mon=data.frame(
+  age_kinship=c(rep('young-nonrel', 100)),
+  donation=c(rep('mon',100)),
+  distance=c(1:100)
+)
+
+#young_rel_time 
+nu_youngrel_time=data.frame(
+  age_kinship=c(rep('young-rel', 100)),
+  donation=c(rep('time',100)),
+  distance=c(1:100)
+)
+
+#young_nonrel_time 
+nu_youngnonrel_time=data.frame(
+  age_kinship=c(rep('young-nonrel', 100)),
+  donation=c(rep('time',100)),
+  distance=c(1:100)
+)
+ 
+#populte with nu predictions based on fitting
+#oldrel_mon 
+for(i in 1:100){
+        nu_oldrel_mon$nu[i]=(med_smry[1,4]/(1+med_smry[1,5]*i))
+}
+
+#oldnonrel_mon 
+for(i in 1:100){
+        nu_oldnonrel_mon$nu[i]=(med_smry[2,4]/(1+med_smry[2,5]*i))
+       }
+
+#oldrel_time 
+for(i in 1:100){
+        nu_oldrel_time$nu[i]=(med_smry[3,4]/(1+med_smry[3,5]*i))
+}
+
+#oldnonrel_time 
+for(i in 1:100){
+        nu_oldnonrel_time$nu[i]=(med_smry[4,4]/(1+med_smry[4,5]*i))
+}
+
+#youngrel_mon 
+for(i in 1:100){
+        nu_youngrel_mon$nu[i]=(med_smry[5,4]/(1+med_smry[5,5]*i))
+}
+
+#youngnonrel_mon 
+for(i in 1:100){
+        nu_youngnonrel_mon$nu[i]=(med_smry[6,4]/(1+med_smry[6,5]*i))
+}
+
+#youngrel_time 
+for(i in 1:100){
+        nu_youngrel_time$nu[i]=(med_smry[7,4]/(1+med_smry[7,5]*i))
+}
+
+#youngnonrel_time 
+for(i in 1:100){
+        nu_youngnonrel_time$nu[i]=(med_smry[8,4]/(1+med_smry[8,5]*i))
+}
+
+#combine all to one dataset
+med_pred=full_join(nu_oldrel_mon,nu_oldrel_time, by=c('age_kinship', 'donation','distance', 'nu'))%>%full_join(nu_oldnonrel_mon,by=c('age_kinship', 'donation', 'distance','nu'))%>%full_join(nu_oldnonrel_time,by=c('age_kinship', 'donation','distance', 'nu'))%>%full_join(nu_youngrel_mon,by=c('age_kinship', 'donation','distance', 'nu'))%>%full_join(nu_youngrel_time,by=c('age_kinship', 'donation','distance', 'nu'))%>%full_join(nu_youngnonrel_mon,by=c('age_kinship', 'donation','distance', 'nu'))%>%full_join(nu_youngnonrel_time,by=c('age_kinship', 'donation', 'distance','nu'))
+
+#plot
+med_plot1=ggplot(data = med_pred)+
+  geom_point(data=med_table_plot, position = "dodge", aes(x=soc_dist, y=med_amnt,shape=`Age-Kinship`))+
+  geom_line(data = med_pred, aes(x=distance, y=nu, color=age_kinship),size=0.5)+
+  facet_grid(donation~.)+
+  xlab("Social Distance")+
+  ylab("Median group amount, moneyX1000 or days")+
+  facet_grid(donation~.)+
+  ggthemes::theme_few()+
+  ggsave("med_amounts_and_curve.png")
+```
+
+As a necessary first step, I first extracted the median donation values for each age group in each of the four donation X kinship conditions. Plotting the data, it appears that compared to the median donation values in the origianl study, the pattern of values in the replication sample seem fairly similar, yet the median amounts (denoted by different shapes for each age-group and kinship combination) appear to be considerably lower, and less variable (see figure 2.b).
+
+**Figure 2a- Median donation values and hyperbolic curve- Gong et al., 2017**
+
+![](gong_et_al_med_amnts.png)                              
+
+**Figure 2b- Median donation values and hyperbolic curve- Replication study**
+```{r, echo=FALSE, warning=FALSE}
+med_plot1
+```
+
+I proceeded to fit the hyperbolic discount curve to the group median donation values in each of the donation form X kinship conditions, with the aim of achieving similar goodness-of-fit indices to those obtained by Gong et al. As shown in table 2, the hyperbolic discount function fit the data well (as assessed by $R^2$ and *RMSE*, and apparent in figure 2b) with values comperable to those reported in the original paper (see figure 3.). One should note, however, that both V (function intercept) and $\kappa$ values are slighlty different than those reported by Gong et al. (2017) this difference could be attributed to diferences in the data, as well as to a somehwat different fitting procedure resulting from use of different softwares. Nonetheless, becuase we are interested in group differences and not in absolute values, the different scales of V and $\kappa$ between in this study should not affect any ensuing interpretation. 
+
+**Figure 3: Gong et al., 2017- V, $\kappa$ and Fit measures for group median values, by condition**
+
+![](gong_et_al_vk.png)
+
+**Table 2: Parameters and Goodness-of-fit Indices of the Hyperbolic Functions, group median values**
+
+`r kable(med_smry, digits = 2, align = "c")`
+
+### Main Analysis: AUC values
+Since the hypoerbolic discount function fit the data well, I proceeded with the main analysis of interest: Comparing the two age groups' *AUC* values in each of the four conditions, with the aim of testing for a *qualified* main effect of age group indicating that younger adults are more generous than older adults, and a post hoc test for the difference between older and younger adults' generosity in donating time to relatives suggesting that older adults are more generous in this condition. 
+
+```{r create dataframe for analysis, include=TRUE, results='hide', error=FALSE, warning=FALSE, message=FALSE}
+#Create the empty dataframe, in which each participant have 4 rows
+df2=as.data.frame(cbind(
+  subid=rep(unique(og_lng2$subid),4),
+  age_grp=c(),
+  gender=c(),
+  edu_lv=c(),
+  incm_lv=c(),
+  num_friends=c(),
+  num_relatives=c(),
+  kinship=c(),
+  donation=c(),
+  k=c(),
+  AUC=c()
+))
+
+#Fill in values for demographics (age, age group, gender, education, income, num_friends, num_relatives)
+for (i in unique(df2$subid)){
+  df_sub=filter(df_og2, subid==i)
+  df2[df2$subid==i, 'age']=df_sub$age
+  df2[df2$subid==i, 'age_grp']=df_sub$age_grp
+  df2[df2$subid==i, 'gender']=df_sub$gender
+  df2[df2$subid==i, 'edu_lv']=df_sub$edu_lv
+  df2[df2$subid==i, 'incm_lv']=df_sub$income
+  df2[df2$subid==i, 'num_friends']=df_sub$imp_friends_num
+  df2[df2$subid==i, 'num_relatives']=df_sub$imp_relative_num
+}
+```
+
+```{r get individual k and AUC values, include=TRUE, results='hide', error=FALSE, warning=FALSE, message=FALSE}
+#for each age individual, exctract values for donation * kinship conditions
+
+#set varaible soc_dist in og_lng2 to be numeric
+og_lng2$soc_dist=as.character(og_lng2$soc_dist)
+og_lng2$soc_dist=as.numeric(og_lng2$soc_dist)
+is.numeric(og_lng2$soc_dist)
+
+#Get length of number of participants (n) as value
+n_p=length(unique(df2$subid))
+
+#Create 4 temporary df's to store values from each iteration
+df2_mr=df2[1:n_p,] #-> for money_relative
+df2_mnr=df2[(n_p+1):(n_p*2),] #->for money_nonrelative
+df2_tr=df2[(2*n_p+1):(n_p*3),] #->for time_relative
+df2_tnr=df2[(3*n_p+1):(n_p*4),] #->for time_nonrel
+
+#rub discount wrapper for each subject in 2*2 conditions
+for(i in unique(df2$subid)){
+  #money relative
+  d_mon_rel=og_lng2%>%filter(subid==i, donation=="mon", kinship=="rel") #-> create temp df to get values from
+  df2_mr[df2_mr$subid==i, 'donation']="mon" #-> store the appropriate donation
+  df2_mr[df2_mr$subid==i, 'kinship']="rel" #-> store the appropriate kinship
+  
+  optim_discount_wrapper <- function(x) { #-> define discount wrapper to get V, k, and RMSE values for this                                                      condition
+  return(data_vs_discount(V = x[1], k = x[2],  
+                          N = d_mon_rel$soc_dist, 
+                          amount = d_mon_rel$amount))
+}
+
+  opt1=optim(c(100, 0.2), optim_discount_wrapper, method = "L-BFGS-B", lower=c(0,0), upper=c(300,100)) #-> run discount_wrapper
+  df2_mr[df2_mr$subid==i, 'k']=opt1$par[2] #-> store resulting k_value
+  df2_mr[df2_mr$subid==i, 'V']=opt1$par[1] #-> store resulting V_value
+
+  # Get AUC value - using WolframAlpha, the integral of this discount function is:
+# V/k*ln(abs(1+k*n))+c -> we don't really care about c for AUC.
+  k=opt1$par[2]
+  V=opt1$par[1]
+
+  #Evaluate for upper bound
+  up=V/k*log(abs(1+k*100))
+  lower=V/k*log(abs(1+k*0))
+
+  df2_mr[df2_mr$subid==i,'AUC']=up-lower
+  
+#money nonrelative
+  d_mon_nonrel=og_lng2%>%filter(subid==i, donation=="mon", kinship=="nonrel") 
+  df2_mnr[df2_mnr$subid==i, 'donation']="mon" 
+  df2_mnr[df2_mnr$subid==i, 'kinship']="nonrel" 
+  
+  optim_discount_wrapper <- function(x) { 
+  return(data_vs_discount(V = x[1], k = x[2],  
+                          N = d_mon_nonrel$soc_dist, 
+                          amount = d_mon_nonrel$amount))
+}
+
+  opt2=optim(c(100, 0.2), optim_discount_wrapper, method = "L-BFGS-B", lower=c(0,0), upper=c(300,100)) 
+  df2_mnr[df2_mnr$subid==i, 'k']=opt2$par[2] 
+  df2_mnr[df2_mnr$subid==i, 'V']=opt2$par[1]
+
+  # Get AUC value 
+  k=opt2$par[2]
+  V=opt2$par[1]
+
+  #Evaluate for upper bound
+  up=V/k*log(abs(1+k*100))
+  lower=V/k*log(abs(1+k*0))
+
+  df2_mnr[df2_mnr$subid==i,'AUC']=up-lower
+  
+#time relative
+  d_time_rel=og_lng2%>%filter(subid==i, donation=="time", kinship=="rel")
+  df2_tr[df2_tr$subid==i, 'donation']="time" 
+  df2_tr[df2_tr$subid==i, 'kinship']="rel" 
+  
+  optim_discount_wrapper <- function(x) { 
+  return(data_vs_discount(V = x[1], k = x[2],  
+                          N = d_time_rel$soc_dist, 
+                          amount = d_time_rel$amount))
+}
+
+  opt3=optim(c(100, 0.2), optim_discount_wrapper, method = "L-BFGS-B", lower=c(0,0), upper=c(300,100)) 
+  df2_tr[df2_tr$subid==i, 'k']=opt3$par[2]
+  df2_tr[df2_tr$subid==i, 'V']=opt3$par[1]
+
+  # Get AUC value 
+  k=opt3$par[2]
+  V=opt3$par[1]
+
+  #Evaluate for upper bound
+  up=V/k*log(abs(1+k*100))
+  lower=V/k*log(abs(1+k*0))
+
+  df2_tr[df2_tr$subid==i,'AUC']=up-lower
+  
+#time nonrelative
+  d_time_nonrel=og_lng2%>%filter(subid==i, donation=="time", kinship=="nonrel")
+  df2_tnr[df2_tnr$subid==i, 'donation']="time" 
+  df2_tnr[df2_tnr$subid==i, 'kinship']="nonrel" 
+  
+  optim_discount_wrapper <- function(x) { 
+  return(data_vs_discount(V = x[1], k = x[2],  
+                          N = d_time_nonrel$soc_dist, 
+                          amount = d_time_nonrel$amount))
+}
+
+  opt4=optim(c(100, 0.2), optim_discount_wrapper, method = "L-BFGS-B", lower=c(0,0), upper=c(300,100)) 
+  df2_tnr[df2_tnr$subid==i, 'k']=opt4$par[2]
+  df2_tnr[df2_tnr$subid==i, 'V']=opt4$par[1]
+
+  # Get AUC value 
+  k=opt4$par[2]
+  V=opt4$par[1]
+
+  #Evaluate for upper bound
+  up=V/k*log(abs(1+k*100))
+  lower=V/k*log(abs(1+k*0))
+
+  df2_tnr[df2_tnr$subid==i,'AUC']=up-lower
+}
+
+#Comnibe all into one dataframe (df2)
+df2=full_join(df2_mr, df2_mnr)%>%full_join(df2_tr)%>%full_join(df2_tnr)
+```
+
+Upon exctracting individual *AUC* (and $\kappa$) values, following the procedure detailed by Gong et al. (2017), I proceeded to exclude observations that could either not be fitted using the hyperbolic discount function, or had log-tranformed *AUC* (and $\kappa$) values that exceeded 3 standard deviations from the mean in either direction. Such observations were removed from the dataset prior to analysis, since the ezAnova function pre-registered for this analysis does not deal with incomplete observations. 
+For this reason, a pre-registered mixed linear-regression was also run on the full data- reported later in the manuscript. 
+
+
+```{r transform values and remove outliers, include=TRUE, results='hide', error=FALSE, warning=FALSE}
+
+#recode all NaN AUC values as missing data (NA)
+for(i in 1:length(df2$subid)){
+  if(is.nan(df2$AUC[i])){df2$AUC[i]=NA}else{df2$AUC[i]=df2$AUC[i]}
+}
+
+#Negative or zero AUC or k values (indicating a problem with the fitting process)
+df2$AUC=recode(df2$AUC, "lo:0.01=NA")
+df2$k=recode(df2$k, "lo:0.01=NA")
+
+#check if AUC is normally distributed
+ggplot(data=df2, aes(x=AUC))+geom_histogram() #-> strong positive skew
+ggplot(data = df2, aes(x=log(AUC)))+geom_histogram() #-> looks better
+
+#check if k is normally distributed
+ggplot(data=df2, aes(x=k))+geom_histogram() #-> strong positive skew
+ggplot(data = df2, aes(x=log(k)))+geom_histogram() #-> looks better
+
+#Since Gong et al., used log(AUC) and log(k) for their analysis, I shall do the same
+df2$logAUC=log(df2$AUC)
+df2$log_k=log(df2$k)
+
+#compute +/- 3 S.D for logAUC and log_k values
+logAUC_hi=mean(df2$logAUC, na.rm=T)+(3*sd(df2$logAUC, na.rm = T))
+logAUC_lo=mean(df2$logAUC, na.rm=T)-(3*sd(df2$logAUC, na.rm = T))
+
+log_k_hi=mean(df2$log_k, na.rm=T)+(3*sd(df2$logAUC, na.rm = T))
+log_k_lo=mean(df2$log_k, na.rm=T)-(3*sd(df2$logAUC, na.rm = T))
+
+#df2=df2%>%filter(k<=(mean(k)+3*sd(k)) & k>=(mean(k)-3*sd(k)) & AUC<=(mean(AUC)+3*sd(AUC))& AUC>=(mean(AUC)-3*sd(AUC))) #-> retain only observations that meet criteria
+
+#recode all observations outside of the +/- 3 S.D range as missing values
+df2$logAUC[df2$logAUC<logAUC_lo]=NA
+df2$logAUC[df2$logAUC>logAUC_hi]=NA
+
+df2$log_k[df2$log_k<log_k_lo]=NA
+df2$log_k[df2$log_k>log_k_hi]=NA
+
+
+#check that the minimal values are not lower than k and AUC "_low"'s, and maximal not higher than "_high"'s
+min(df2$log_k, na.rm = T)<log_k_lo; max(df2$log_k,na.rm = T)>log_k_hi; min(df2$logAUC,na.rm = T)<logAUC_lo; max(df2$logAUC,na.rm = T)>logAUC_hi
+```
+
+```{r prepare data for ANOVA and remove participants with outliers, include=TRUE, results='hide', error=FALSE, warning=FALSE, include=FALSE}
+
+#Change subid to factor
+is.numeric(df2$subid) #-> true
+df2$subid=as.character(df2$subid); df2$subid=as.factor(df2$subid)
+is.factor(df2$subid)#-> true
+summary(df2$age_grp); summary(df2$donation); summary(df2$kinship) 
+
+# check that predictors are factors and AUC is numeric
+is.factor(df2$age_grp); is.factor(df2$donation); is.factor(df2$kinship) #-> age_grp yes, others no
+
+is.character(df2$donation)#-> true
+df2$donation=as.factor(df2$donation); is.factor(df2$donation)
+is.character(df2$kinship)#-> true
+df2$kinship=as.factor(df2$kinship); is.factor(df2$kinship)
+
+is.numeric(df2$logAUC)#-> True
+
+## Remove all observations of subjects with outliers
+
+na_counts=df2%>%group_by(subid)%>%summarise(naAUC_counts=sum(is.na(logAUC)),na_k_counts=sum(is.na(log_k)))%>%ungroup()
+
+for (i in unique(df2$subid)){
+  temp=filter(na_counts, subid==i)
+  df2[df2$subid==i, 'naAUC_counts']=temp$naAUC_counts
+  df2[df2$subid==i, 'na_k_counts']=temp$na_k_counts
+}
+
+df2_noNA_AUC=df2%>%filter(naAUC_counts==0)
+df2_noNA_k=df2%>%filter(na_k_counts==0)
+```
+
+```{r ANOVA AUC without problem participants, include=TRUE, message=F, error=F, warning=F, results='hide'}
+anova_AUC2=ezANOVA(data = df2_noNA_AUC, wid=.(subid), dv=na.omit(logAUC), within  = .(donation, kinship), between = .(age_grp), type = 3, observed = .(age_grp)) #-> using  type=3 to emulate SPSS, indicate that age_grp is observed (rather than manipulated) to get more accurate eta_sq
+
+kable(anova_AUC2$ANOVA)
+```
+
+**Table 3: Results of mixed-design ANOVA (age group X donation X kinship): Differences in log-transformed AUC values**
+
+`r kable(anova_AUC2$ANOVA, digits=2, align='c')`
+
+*DFn= Degrees of freedom-numerator, DFd= degrees of freedom-denomenator, ges= Generalized eta squared measure of effect size- in this analysis it reflects the $\eta_p^2$ (due to the use of type III sum of squares)*
+
+
+As can be seen in table 3, Analysis of variance to detect differences in overall generosity as indicated by *AUC* values, did not reveal the expected main effect of age ($F_{(1,70)}$=2.835, *p*=0.097). In addition, the effect size ($\eta_p^2$=0.025) is smaller than that found in the original paper. However, the replication study was not powered to observe this effect, nor the success of the replication depend on it. Of note, we did not observe the interaction between age group, form of donation and kinship that allowed Gong et al. to explore pairwise comparisons in the original paper. In the replication study, the efect of this 3-way interaction is all but non-existant ($F_{(1,70)}$=0.062, *p*=0.8, $\eta_p^2$<0.001). 
+
+I did, however, observe a significant age group X kinship interaction of small magnitude ($F_{(1,70)}$=4.569, *p*=0.036, $\eta_p^2$=0.015). This interaction suggests that despite the lack of overall difference in generosity, older and younger adults might differ in their willingess to donate to relatives compared to non-relatives, and that any such difference is not affected by the form of donation. Meaning, the main hypothesis of interest- that older adults are more generous than young adults when donating time to relatives, might still be observed. I therefore continued as planned with the post-hoc, one-sided, t-test comparing the log transformed *AUC* values of older and younger adults when donating their time to relatives.
+
+```{r post hoc test of interest, include=TRUE, results='hide', error=FALSE, warning=FALSE}
+#get the appropriate dataset
+
+df2_noNa_reltime=df2_noNA_AUC%>%filter(donation=="time", kinship=="rel")
+
+#run t.test
+t.1=t.test(data=df2_noNa_reltime, logAUC~age_grp, alternative='greater') #-> run the one-sided test on the dataframe with only relatives and time reported
+print(t.1)
+
+d.1=cohen.d(df2_noNa_reltime$logAUC,df2_noNa_reltime$age_grp)
+
+```
+
+```{r AUC plots, include=FALSE}
+#log AUC values, by age group for each donation*kinship condition
+mean_and_ci <- df2_noNA_AUC %>% #-> to get mean log(AUC) values and 95% C.Is in each condition
+  group_by(age_grp, donation, kinship) %>% 
+  summarise(n = n(),
+            mean = mean(logAUC),
+            ci_lower = mean - (qt(0.975, df = n-1) * (sd(log(AUC))/sqrt(n))),
+            ci_upper = mean + (qt(0.975, df = n-1) * (sd(log(AUC))/sqrt(n)))) 
+mean_and_ci
+
+mean_and_ci$age_grp=as.factor(mean_and_ci$age_grp)
+mean_and_ci$donation=as.factor(mean_and_ci$donation)
+mean_and_ci$kinship=as.factor(mean_and_ci$kinship)
+
+
+#Plot- just t-test
+t_test_plot=ggplot(data = df2_noNA_AUC%>%filter(donation=='time' & kinship=='rel'), aes(x=age_grp, y=log(AUC),color=age_grp))+
+  geom_point(position="jitter",alpha=0.5)+
+  stat_summary(fun.y = "mean", geom="bar", alpha=0.3)+
+  ylim(4.3,8.7)+
+  geom_pointrange(data=mean_and_ci%>%filter(donation=='time' & kinship=='rel'), aes(y=mean,ymin = ci_lower, ymax = ci_upper),color = "black",size=0.7, alpha=0.6)+
+  ggthemes::theme_few()+
+  theme(legend.position="none")+
+  ggtitle("time donation to relatives: transformed AUC values, by group")+
+  ylab("AUC values (log transformed)")+
+  xlab("Age group")+
+  ggsave("t_test_plot.png")
+
+t_test_plot
+
+AUC_plots=ggplot(data = df2_noNA_AUC, aes(x=age_grp, y=log(AUC),color=age_grp))+
+  geom_point(position="jitter",alpha=0.5)+
+  stat_summary(fun.y = "mean", geom="bar", alpha=0.3)+
+  ylim(0,9)+
+  geom_pointrange(data=mean_and_ci, aes(y=mean,ymin = ci_lower, ymax = ci_upper),color = "black",size=0.7, alpha=0.6)+
+  ggthemes::theme_few()+
+  ggtitle("Mean AUC values by age group, donation type, and kinship")+
+  ylab("AUC values (log transformed)")+
+  xlab("Age group")+
+  facet_grid(donation~kinship)+
+  ggsave("AUC_plots.png")
+
+  AUC_plots
+```
+
+Post-hoc, one-sided t-test comparing the mean log-tranformed *AUC* values of older and younger adults when donating their time to relatives did not find a significant difference between the groups ($t_{(69.23)}$=`r round(t.1$statistic,2)`, $p_{(one-sided)}$=`r round(t.1$p.value, 2)`. The observed effect size was also similarly negligible (*Cohen's D*=`r round(d.1$estimate,2)`, 95% C.I=`r round(d.1$conf.int,2)`)
+
+**Figure 4:**
+
+```{r}
+print(t_test_plot)
+```
+
+*Thick black points represent the log-tranformed AUC value in each age group. Error bars represent 95% C.I around the mean, and colored dots are individual observations*
+
+As can be seen in figure 4 above, the mean log transformed *AUC* values of the two groups are nearly identical, and there seems to be considerable variation in individual values within each group. In sum, **the main result of interest failed to replicate in this study**. 
+
+### Secondary analysis
+#### $\kappa$ values
+```{r k ANOVA, results='hide', error=FALSE, warning=FALSE}
+anova_k=ezANOVA(data = df2_noNA_k, wid=.(subid), dv=.(log_k), within  = .(donation, kinship), between = .(age_grp),observed = .(age_grp), type = 3) #-> type=3 to emulate SPSS, indicate that age_grp is observed (rather than manipulated) to get more accurate eta_sq
+
+print(anova_k) #-> comment main results (Gong et al. found sig. age_grp*donation interaction (as well as kinship*donation which is not of interest)
+```
+
+
+```{r k values post-hoc t-tests, results='hide', error=FALSE, warning=FALSE}
+#Gong et al found that there was no difference in discounting for time donations regardless of kinship, but that older adults discounted money donation more so than yound adults, in both donation conditions
+
+#get the appropriate datasets-
+#df2_mr_crt=df2_time_crt%>%filter(donation=="mon", kinship=="rel")
+#df2_mnr_crt=df2_time_crt%>%filter(donation=="mon", kinship=="nonrel")
+#df2_tr_crt=df2_time_crt%>%filter(donation=="time", kinship=="rel")
+#df2_tnr_crt=df2_time_crt%>%filter(donation=="time", kinship=="nonrel")
+
+#Post-hoc comparison of interest, using Bonferroni.
+#n_comparisons=2*2 #-> (there are 4 possible comparisons: old-young in both donations and both kinships)
+
+##run t.tests
+#money, relatives
+#t.2a=t.test(df2_mr_crt$log_k~df2_mr_crt$age_grp)
+#print(t.2a)
+#pt.2a=t.2a$p.value*n_comparisons
+
+#money, nonrelatives
+#t.2b=t.test(df2_mnr_crt$log_k~df2_mnr_crt$age_grp)
+#print(t.2b)
+#pt.2b=t.2b$p.value*n_comparisons
+
+#time, relatives
+#t.2c=t.test(df2_tr_crt$log_k~df2_tr_crt$age_grp)
+#print(t.2c)
+#pt.2c=t.2c$p.value*n_comparisons
+
+#time, nonrelatives
+#t.2d=t.test(df2_tnr_crt$log_k~df2_tnr_crt$age_grp)
+#print(t.2d)
+#pt.2d=t.2d$p.value*n_comparisons
+```
+
+#####Better analysis to test hypothesis- mixed effects linear model with planned orthogonal contrasts
+```{r lmer, warning=FALSE, message=FALSE, error=FALSE, results='hide'}
+#First set contrasts so that the intercept is the AUC value for older adults collapsing across donation and kinship conditions (to reflect the original "main" effect of age group)
+## age group
+contrasts(df2$age_grp)
+contrasts(df2$age_grp)=cbind('"Main"'=c(-1,1))#-> expecting older adults to be less generous overall, as was found in Gong et al.
+## donation
+contrasts(df2$donation)
+contrasts(df2$donation)=cbind('"Main"'=c(1,-1)) #-> expecting participants to be more generous with money over time
+## kinship
+contrasts(df2$kinship)
+contrasts(df2$kinship)=cbind('"Main"'=c(-1,1)) #-> expecting participants to be more generous to relatives over non-relatives
+
+#Run lmer
+lmer1=lmer(data=df2, logAUC~age_grp*donation*kinship+(1|subid), REML = F) #-> fitting with ML because we are interested in getting accurate estimates fir the parameters.
+
+#Run lmer with covariates
+lmer2=lmer(data=df2, logAUC~age_grp*donation*kinship+gender+incm_lv+edu_lv+num_friends+num_relatives+(1|subid), REML = F)
+
+#Second-Set contrasts d=so that the intercept is the mean AUC for older adults, when donating time to relatives.
+#In this case, the simple effect of age is the t-test of interest: the difference between older and younger adults when donating time to relatives.
+
+## age group
+contrasts(df2$age_grp)
+contrasts(df2$age_grp)=cbind('"Young"'=c(0,1))
+## donation
+contrasts(df2$donation)
+contrasts(df2$donation)=cbind('"Money"'=c(1,0))
+## kinship
+contrasts(df2$kinship) #current intercept: old/mon/nonrel
+contrasts(df2$kinship)=cbind('"Non_relatives"'=c(1,0))
+
+#Run lmer
+lmer3=lmer(data=df2, logAUC~age_grp*donation*kinship+(1|subid), REML = F) #-> fitting with ML because we are interested in getting accurate estimates fir the parameters.
+
+#Run lmer with covariates
+lmer4=lmer(data=df2, logAUC~age_grp*donation*kinship+gender+incm_lv+edu_lv+num_friends+num_relatives+(1|subid), REML = F)
+
+kable(tidy(lmer1))
+kable(tidy(lmer3))
+```
+
+
+```{r}
+kable(tidy(lmer1))
+```
+
