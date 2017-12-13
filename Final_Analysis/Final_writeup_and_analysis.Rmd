@@ -153,7 +153,7 @@ Seventh, the age range in the young-adult group in the original paper is 18-44. 
 ### Methods Addendum (Post Data Collection)
 
 #### Actual Sample
-  ???????????????????????????????????????????????????????????????????????????????????????????
+The final sample consisted of 47 older U.S residents (age range 57-74, mean=62.7), and 43 younger U.S residents (age range 19-35, mean=28.2). Both age groups are slightly younger than those reported in the original paper. 
   
 #### Differences from pre-data collection methods plan
 
@@ -287,7 +287,7 @@ og_lng=df_og%>%
 ```
 
 #### Demographic data
-```{r echo=TRUE, results='hide', error=FALSE, warning=FALSE}
+```{r include=F, results='hide', error=FALSE, warning=FALSE}
 #table of descpritive statistics
 dscrpt=df_og%>%group_by(age_grp)%>%summarise(male_female_ratio=paste(sum(gender=="Male"), "/", sum(gender=="Female")),
 Age_av=round(mean(age),2),Age_sd=round(sd(age),2), 
@@ -298,7 +298,7 @@ dscrpt2=dscrpt%>%rename('Age group'=age_grp, 'Male/Female ratio'=male_female_rat
 
 ```
 
-```{r test for differences, include=TRUE, results='hide', error=FALSE, warning=FALSE}
+```{r test for differences, include=F, results='hide', error=FALSE, warning=FALSE}
 #Gender (chi-square)
 gen=chisq.test(df_og$gender, df_og$age_grp, rescale.p = T, correct = F)
 #Age
@@ -331,7 +331,7 @@ In the replication sample, the older adult group was significantly older ($t_{(8
 `r kable(dscrpt2,align='c', caption = "Table 1: decsriptive statistics by age group")`
 
 #### Fitting the curve for age group median values (for each donation X kinship condition)
-```{r median values, include=TRUE, results='hide', error=FALSE, warning=FALSE}
+```{r median values, include=F, results='hide', error=FALSE, warning=FALSE}
 #create df with monetary amounts divided by 1000 for plotting and analyses (to have the same units for time and money donations)
 df_og2=df_og%>%mutate(rel_1_mon=rel_1_mon/1000, 
                       rel_2_mon=rel_2_mon/1000, 
@@ -809,12 +809,12 @@ df2$AUC=recode(df2$AUC, "lo:0.01=NA")
 df2$k=recode(df2$k, "lo:0.01=NA")
 
 #check if AUC is normally distributed
-ggplot(data=df2, aes(x=AUC))+geom_histogram() #-> strong positive skew
-ggplot(data = df2, aes(x=log(AUC)))+geom_histogram() #-> looks better
+AUc_hist=ggplot(data=df2, aes(x=AUC))+geom_histogram() #-> strong positive skew
+logAUC_hist=ggplot(data = df2, aes(x=log(AUC)))+geom_histogram() #-> looks better
 
 #check if k is normally distributed
-ggplot(data=df2, aes(x=k))+geom_histogram() #-> strong positive skew
-ggplot(data = df2, aes(x=log(k)))+geom_histogram() #-> looks better
+k_hist=ggplot(data=df2, aes(x=k))+geom_histogram() #-> strong positive skew
+log_k_hist=ggplot(data = df2, aes(x=log(k)))+geom_histogram() #-> looks better
 
 #Since Gong et al., used log(AUC) and log(k) for their analysis, I shall do the same
 df2$logAUC=log(df2$AUC)
@@ -983,7 +983,7 @@ As can be seen in table 4 below, the only significant effect found was a main ef
 
 *DFn= Degrees of freedom-numerator, DFd= degrees of freedom-denomenator, ges= Generalized eta squared measure of effect size- in this analysis it reflects the $\eta_p^2$ (due to the use of type III sum of squares)*
 
-```{r k values post-hoc t-tests, include=F, results='hide', error=FALSE, warning=FALSE}
+```{r k values post-hoc t-tests, include=T, results='hide', error=FALSE, warning=FALSE}
 
 #get the appropriate datasets-
 df2_mr_crt=df2_noNA_k%>%filter(donation=="mon", kinship=="rel")
@@ -1046,7 +1046,7 @@ k_plots=ggplot(data = df2_noNA_k, aes(x=age_grp, y=log_k,color=age_grp))+
   k_plots
 ```
 
-T-tests comparing older and younger discount rates across the 4 conditions did not reveal any age group differences (all t-values between `r round(t.2d$statistic,2)` and `r round((t.2a$statistic,2)`, all *p's*>`r round((t.2a$p.value,2)`$_{(uncorrected)}$. Figure 5 (below) presents the means and distribution of individual $\kappa$ values across conditions. The figure suggests that the main effect of donation form is due to $\kappa$ values for monetary donations being larger, across age groups and kinship conditions. Since larger $\kappa$ values indicate steeper discounting, this findings suggest that individuals discount money more so than time when donating to others in their social network. That is, the difference in money donations from donation to person in position N to the person in position N+1 is larger than that of time donations.
+T-tests comparing older and younger discount rates across the 4 conditions did not reveal any age group differences (all t-values between `r round(t.2d$statistic,2)` and `r round(t.2a$statistic,2)`, all *p's*>`r round(t.2a$p.value,2)`$_{(uncorrected)}$. Figure 5 (below) presents the means and distribution of individual $\kappa$ values across conditions. The figure suggests that the main effect of donation form is due to $\kappa$ values for monetary donations being larger, across age groups and kinship conditions. Since larger $\kappa$ values indicate steeper discounting, this findings suggest that individuals discount money more so than time when donating to others in their social network. That is, the difference in money donations from donation to person in position N to the person in position N+1 is larger than that of time donations.
 
 **Figure 5: log-transformed $\kappa$ values of older and younger adults, across donation forms and kinship conditions**
 
@@ -1178,9 +1178,68 @@ summary(lmer8)
 
 At first, a $\chi^2$ contingency test reveald that the ratio of white to non-white participants was different between the young and old samples ($\chi^2_{(1)}$= `r round(chi_race$statistic, 2)`, *p*<0.001). I therefore first ran the mixed linear models controlling for race, and found that the results were effictively unchanged. 
 
-In general, this was true when including race as an interaction term with one notebale difference:
-when including race as an interaction term, the "main" effect of age group was significant among the white participants (*b*=0.27, $t_{(83.83)}$= 2.2, *p*=0.03), suggesting that among European-Americans, younger adults were indeed more generous- as was found in the original paper among Hong Kong Chinese. The interaction between the "main" effect of age group and race was not found to be significant. The lack of significant interaction, coupled with the lack of age_group effect when not accounting for race, suggest to me that the age effect among European-Americans might be a spourious finding and likely caused by the fact that there are many more European Americans in the older adult sample. 
+In general, this was true when including race as an interaction term as well, with one notebale difference: when including race as an interaction term, the "main" effect of age group was significant among the white participants (*b*=0.27, $t_{(83.83)}$= 2.2, *p*=0.03), suggesting that among European-Americans, younger adults were indeed more generous- as was found in the original paper among Hong Kong Chinese. The interaction between the "main" effect of age group and race was not found to be significant. The lack of significant interaction, coupled with the lack of age_group effect when not accounting for race, suggest to me that the age effect among European-Americans might be a spourious finding and likely caused by the fact that there are many more European Americans in the older adult sample. 
 
+An additional, conceptual, concern regarding this study is that using *AUC* as an indicator for generosity is not as straight forward as using the actual amounts reported by the participants. *AUC* is a function of the hyperbolic discount curve, which be definition deviates somewhat from the actual values. Gong et al.(2017) mention running an analysis on the "raw" donation values and finding essoentially the same results as they did when using the *AUC* as an approximation. I therefore ran the same sequence of mixed-effects linear regression models on the raw donation amounts (while including social distance as a linear predictor) as I did for the log-transformed *AUC* values.
+
+```{r raw amounts, include=T, message=F, warning=FALSE, results='hide', error=F}
+## age group
+contrasts(og_lng2$age_grp)
+contrasts(og_lng2$age_grp)=cbind('"Main"'=c(-1,1))#-> expecting older adults to be less generous overall, as was found in Gong et al.
+## donation
+og_lng2$donation=as.factor(og_lng2$donation)
+contrasts(og_lng2$donation)
+contrasts(og_lng2$donation)=cbind('"Main"'=c(1,-1)) #-> expecting participants to be more generous with money over time
+## kinship
+og_lng2$kinship=as.factor(og_lng2$kinship)
+contrasts(og_lng2$kinship)
+contrasts(og_lng2$kinship)=cbind('"Main"'=c(-1,1)) #-> expecting participants to be more generous to relatives over non-relatives
+
+#Run lmer
+lmer9=lmer(data=og_lng2, amount~age_grp*donation*kinship+soc_dist+(1|subid), REML = F) #-> fitting with ML because we are interested in getting accurate estimates fir the parameters.
+summary(lmer9)
+
+lmer10=lmer(data=og_lng2, amount~age_grp*donation*kinship*soc_dist+(1|subid), REML = F) #-> fitting with ML because we are interested in getting accurate estimates fir the parameters.
+summary(lmer10)
+
+#Second-Set contrasts d=so that the intercept is the mean AUC for older adults, when donating time to relatives.
+#In this case, the simple effect of age is the t-test of interest: the difference between older and younger adults when donating time to relatives.
+
+## age group
+contrasts(og_lng2$age_grp)
+contrasts(og_lng2$age_grp)=cbind('"Young"'=c(0,1))
+## donation
+contrasts(og_lng2$donation)
+contrasts(og_lng2$donation)=cbind('"Money"'=c(1,0))
+## kinship
+contrasts(og_lng2$kinship) #current intercept: old/mon/nonrel
+contrasts(og_lng2$kinship)=cbind('"Non_relatives"'=c(1,0))
+
+#Run lmer
+lmer11=lmer(data=og_lng2, amount~age_grp*donation*kinship+soc_dist+(1|subid), REML = F) #-> fitting with ML because we are interested in getting accurate estimates fir the parameters.
+summary(lmer11)
+
+lmer12=lmer(data=og_lng2, amount~age_grp*donation*kinship*soc_dist+(1|subid), REML = F) #-> fitting with ML because we are interested in getting accurate estimates fir the parameters.
+summary(lmer12)
+
+#plots
+amnt_plot1=ggplot(data = og_lng2, aes(x=soc_dist, y=amount, color=age_grp))+
+  scale_color_brewer(palette = "Set2")+
+  geom_point(position = "jitter", alpha=0.2)+
+  geom_smooth(method = "lm", alpha=0.2)+
+  ggthemes::theme_few()+
+  facet_grid(kinship~donation)+
+  xlab("Social Distance")+
+  ylab("Donation amount Days or Money X 1000")
+  
+
+amnt_plot1
+```
+
+The overall results of this exploratory analysis reveal a similar pattern to that obtained by using *AUC* values. That is, the main effects of kinship and donation form on generosity, as well as the interaction between age group and kinship were significant whether assessed by *AUC* or raw donation amounts. I did, however, found that social distance interacts with all main effects. As can ne seen in figure 6 below, age group differences in donation amounts were more pronounced in close social distances, and this effect was only evident in donations to non-relatives (age group x kinship x social distance interaction: *b*=0.04, $t_{(243)}$=2.84, *p*=0.005). In addition, social distance affected time donations more than money donations across age groups and kinship conditions (donation x social distance interaction: *b*=0.04, $t_{(243)}$=2.77, *p*=0.006), likely due to higer intercept for time donations, indicating that participants were more generous with their time compared to their money (as was found in the main confirmatory analysis of *AUC* values). *All in all, this exploratory analysis suggests that *AUC* values are a reasonable approximation of total donation amounts*.
+
+**Figure 6: Donation amounts by social distance, age group, kinship and type of donation**
+`r print(amnt_plot1)`
 
 ## Discussion
 
@@ -1189,17 +1248,11 @@ when including race as an interaction term, the "main" effect of age group was s
 This replication study attempted to replicate findings by Gong et al. (2017) that in a hypothetical donation task to relatives and non-relatives of varied degrees of closensess, older adults are overall less generous than young adults, but that when donating time to relatives this pattern is reversed. I did not find any evidence in support of either effect in this study. I employed two different analysis techniques: Mixed-design ANOVA (as used in the original study) and a mixed-effects linear regression which is more robust to missing data, yet neither revealed the anticipated effects. In addition, I was interested in attempting to replicate results regarding social discount rates- that older adults discount monetary donations more than young adults. Again, I did not find support for differences between age groups in social discounting rates. **I am therefore inclined to deem this replication attempt a failure**.
 
 ### Commentary
+The failure to replicate is most likely due to cultural differences. The original study was carried in Hong Kong, and there is some evidence to suggest that age group differences in preference for social partners, prosocial behavior, and perceptions of members in the social network being "close" documented in western societies do not generalize cleanly to eastern cultures. The primary author of the original study did mention in private communication that he did not believe the results would replicate in western sample. 
 
-The replication attempt was reasonably powered, yet 
+Despite my attempt to account for possible cultural differences in an exploratory analysis, I do not believe the failure to replicate the resutls when accounting for race and ethnicity is informative. That is because in the replication sample age group was confounded with race since almost all older adult participants were also European-Americans. This suggest that a more thorough, cross-cultural, relpication effort needs to be carried out in order to assess the robustness of these findings. To assess the findings' sensitivity to cultural difference, Hong Kong Chinese and U.S residents (primarily European=Americans) need to be compared directly. 
 
-*Likely not due to lack of power (effect size really small and if anything- in the opposite direction)
-*Not because of "simple" sample differences
-*Can not really be accounted for by differences between \$U.S and \$H.K, but possible
-*Culture?
-*Not including cognitive testing?
-
-Add open-ended commentary (if any) reflecting (a) insights from follow-up exploratory analysis, (b) assessment of the meaning of the replication (or not) - e.g., for a failure to replicate, are the differences between original and present study ones that definitely, plausibly, or are unlikely to have been moderators of the result, and (c) discussion of any objections or challenges raised by the current and original authors about the replication attempt.  None of these need to be long.
-
+I did, however find interesting age group differences in the current sample. Primarily, that younger adults seemed more generous to non-relatives compared to older adutls (mimicking, to some extent, the original study's results). This finding might explain why, in the U.S, older adults volunteer in lower rates compared to adults of younger ages- they seem less willing to donate (especially their time) to people who are not related to them, even when those people are thought to be "close".  
 
 
 ###Supplementary materials
@@ -1210,12 +1263,14 @@ k_v_var=df2%>%group_by(subid)%>%summarise(k_var=var(k), V_var=var(V))%>%ungroup(
 
 ggplot(data = k_v_var%>%filter(parameter=='V_var'), aes(x=subid, y=var))+
   geom_bar(stat = "identity")+
+  ggthemes::theme_few()+
   xlab("Participant ID")+
   ylab("Variance across conditions")+
   ggtitle("Figure sup1: Individual varaince in V values")
 
 ggplot(data = k_v_var%>%filter(parameter=='k_var'), aes(x=subid, y=var))+
   geom_bar(stat = "identity")+
+  ggthemes::theme_few()+
   xlab("Participant ID")+
   ylab("Variance across conditions")+
   ggtitle("Figure sup2: Individual varaince in k values")
@@ -1230,6 +1285,9 @@ kable(anova_AUC2$ANOVA, position='c')
 
 **Figure 4b: log-transformed AUC values of older and younger adults, across donation forms and kinship conditions**
 
-`r print(AUC_plots)`
+```{r}
+print(AUC_plots)
+```
+
 
 *Thick black points represent the log-tranformed AUC value in each age group. Error bars represent 95% C.I around the mean, and colored dots are individual observations*
