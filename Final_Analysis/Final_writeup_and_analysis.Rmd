@@ -151,9 +151,15 @@ Sixth, the authors do not report how they dealt with missing values for individu
 Seventh, the age range in the young-adult group in the original paper is 18-44. I am restricting this to be under 35. That is becuase in the literature, people above 35 are typically considered middle aged, or at the very least not "young" adults. For the older adult group, in order to recruit participants efficiently through mechanical Turk's 'premium' qualification, the minimal age in the replication study's older adult group is set to 55 becuase the platform does not allow to screen only for participants older than 55.
   
 ### Methods Addendum (Post Data Collection)
+
+#### Actual Sample
+  ???????????????????????????????????????????????????????????????????????????????????????????
+  
+#### Differences from pre-data collection methods plan
+
 -the package `effsize` was added to compute Cohen's D effect size measurement easily.
 
-- to code education level as a numeric variable, the following lines were added (after transforming the writted values): `df_og$edu_lv=as.character(df_og$edu_lv)`, then `df_og$edu_lv=as.numeric(df_og$edu_lv)`.
+- to code education level as a numeric variable, the following lines were added (after transforming the writted values): `df_og$edu_lv=as.character(df_og$edu_lv)`, then `df_og$edu_lv=as.numeric(df_og$edu_lv)`. In addition, the varaible "race" accidently ommitted from the original creation of the data frame for analysis (df2), and was included post pre-registration.
 
 - in order to fit the hyperbolic discount function, the `optim` function was used with `method="L-BFGS-B"`, and possible V and $\kappa$ values were constrained to be 300 and 100 respectively. Such bounding is sensible given the reported values in Gong et al. (2017) and given the experimental constraints on participant's reported donation values (participants were instructed to enter values between 0-100).
 
@@ -161,11 +167,11 @@ Seventh, the age range in the young-adult group in the original paper is 18-44. 
 
 - Clarification: Based on the exclusion procedure reported in the original paper, in this replication paper participants for whom the fitting process failed are defined as those with *AUC* and $\kappa$ values calculated to be zero, negative, or otherwise a non-finite number.
 
+- t-tests for age group differences were pre-registered to be carried with Bonferroni correction. Since the original authors did not report applying any post-hoc correction to their t-tests, it was decided to report the replication results both with and without correction.
 
 
-#### Sample
-  ???????????????????????????????????????????????????????????????????????????????????????????
-  
+## Results
+
 ### Data preparation
 
 	
@@ -182,6 +188,7 @@ library(kableExtra)
 library(lme4)
 library(lmerTest)
 library(effsize)
+library(RColorBrewer)
 
 # compute the hyperbolic function
 discount <- function (V, k, N) {
@@ -486,7 +493,7 @@ med_plot1=ggplot(data=med_table_plot, aes(x=soc_dist, y=med_amnt, color=`Age-Kin
   ggthemes::theme_few()
 ```
 
-```{r, prediction lines, include=TRUE, results='hide', error=FALSE, warning=FALSE, message=FALSE}
+```{r, prediction lines, include=FALSE, results='hide', error=FALSE, warning=FALSE, message=FALSE}
 # create datasets of "nu" values for plotting the line
 #old_rel_mon 
 nu_oldrel_mon=data.frame(
@@ -621,7 +628,9 @@ I proceeded to fit the hyperbolic discount curve to the group median donation va
 
 `r kable(med_smry, digits = 2, align = "c")`
 
-### Main Analysis: AUC values
+### Confirmatory Analysis 
+
+#### Main analysis: AUC values
 Since the hypoerbolic discount function fit the data well, I proceeded with the main analysis of interest: Comparing the two age groups' *AUC* values in each of the four conditions, with the aim of testing for a *qualified* main effect of age group indicating that younger adults are more generous than older adults, and a post hoc test for the difference between older and younger adults' generosity in donating time to relatives suggesting that older adults are more generous in this condition. 
 
 ```{r create dataframe for analysis, include=TRUE, results='hide', error=FALSE, warning=FALSE, message=FALSE}
@@ -634,6 +643,7 @@ df2=as.data.frame(cbind(
   incm_lv=c(),
   num_friends=c(),
   num_relatives=c(),
+  race=c(),
   kinship=c(),
   donation=c(),
   k=c(),
@@ -650,6 +660,7 @@ for (i in unique(df2$subid)){
   df2[df2$subid==i, 'incm_lv']=df_sub$income
   df2[df2$subid==i, 'num_friends']=df_sub$imp_friends_num
   df2[df2$subid==i, 'num_relatives']=df_sub$imp_relative_num
+  df2[df2$subid==i, 'race']=df_sub$race
 }
 ```
 
@@ -670,7 +681,8 @@ df2_mnr=df2[(n_p+1):(n_p*2),] #->for money_nonrelative
 df2_tr=df2[(2*n_p+1):(n_p*3),] #->for time_relative
 df2_tnr=df2[(3*n_p+1):(n_p*4),] #->for time_nonrel
 
-#rub discount wrapper for each subject in 2*2 conditions
+
+#run discount wrapper for each subject in 2*2 conditions
 for(i in unique(df2$subid)){
   #money relative
   d_mon_rel=og_lng2%>%filter(subid==i, donation=="mon", kinship=="rel") #-> create temp df to get values from
@@ -776,10 +788,13 @@ for(i in unique(df2$subid)){
 
 #Comnibe all into one dataframe (df2)
 df2=full_join(df2_mr, df2_mnr)%>%full_join(df2_tr)%>%full_join(df2_tnr)
+df2_plot_pred=df2
 ```
 
-Upon exctracting individual *AUC* (and $\kappa$) values, following the procedure detailed by Gong et al. (2017), I proceeded to exclude observations that could either not be fitted using the hyperbolic discount function, or had log-tranformed *AUC* (and $\kappa$) values that exceeded 3 standard deviations from the mean in either direction. Such observations were removed from the dataset prior to analysis, since the ezAnova function pre-registered for this analysis does not deal with incomplete observations. 
-For this reason, a pre-registered mixed linear-regression was also run on the full data- reported later in the manuscript. 
+Upon exctracting individual *AUC* (and $\kappa$) values, following the procedure detailed by Gong et al. (2017), I proceeded to exclude observations that could either not be fitted using the hyperbolic discount function (resulting in $\kappa$ and *AUC* values that are zero, negative or otherwise uncomputable), or had log-tranformed *AUC* (and $\kappa$) values that exceeded 3 standard deviations from the mean in either direction. As noted by Gong et al., the fitting process fails "because the amounts of donation were almost the same across social distances in these cells" (pg. 4). 
+In total, 72 observation had *AUC* values treated as missing data, and 116 observation had such $\kappa$ values. Though Gong et al. similarly mentioning having to exclude a relatively large number of observations, there number of excluded data points in the replecation sample is greater. Visual inspection of individual V and $\kappa$ values (the individual-specific parameters of the discount function) suggests that while some participants changed both their intercept of donation (V) and their discount rate ($\kappa$) across conditions, many did not. This tendecy towards fixed answers in the current sample might contribute to the relatively large number of excluded data points (see figures sup1 and sup2 in the supplementary materials).  
+
+Participants with excluded data points were removed from the dataset prior to analysis, since the ezAnova function pre-registered for this analysis does not deal with incomplete observations. This process resulted in the removal of 18 participants from the analysis of AUC values, resulting in a final sample for this analysis of 72 participants (37 older adults and 35 younger adults). To avoid such blanked exlusion of participants, a pre-registered mixed linear-regression was also run on the full data- reported later in the manuscript. 
 
 
 ```{r transform values and remove outliers, include=TRUE, results='hide', error=FALSE, warning=FALSE}
@@ -826,7 +841,7 @@ df2$log_k[df2$log_k>log_k_hi]=NA
 min(df2$log_k, na.rm = T)<log_k_lo; max(df2$log_k,na.rm = T)>log_k_hi; min(df2$logAUC,na.rm = T)<logAUC_lo; max(df2$logAUC,na.rm = T)>logAUC_hi
 ```
 
-```{r prepare data for ANOVA and remove participants with outliers, include=TRUE, results='hide', error=FALSE, warning=FALSE, include=FALSE}
+```{r prepare data for ANOVA and remove participants with outliers, include=TRUE, results='hide', error=FALSE, warning=FALSE, include=TRUE}
 
 #Change subid to factor
 is.numeric(df2$subid) #-> true
@@ -858,10 +873,15 @@ df2_noNA_AUC=df2%>%filter(naAUC_counts==0)
 df2_noNA_k=df2%>%filter(na_k_counts==0)
 ```
 
-```{r ANOVA AUC without problem participants, include=TRUE, message=F, error=F, warning=F, results='hide'}
-anova_AUC2=ezANOVA(data = df2_noNA_AUC, wid=.(subid), dv=na.omit(logAUC), within  = .(donation, kinship), between = .(age_grp), type = 3, observed = .(age_grp)) #-> using  type=3 to emulate SPSS, indicate that age_grp is observed (rather than manipulated) to get more accurate eta_sq
+```{r ANOVA AUC without problem participants, include=FALSE, message=F, error=F, warning=F, results='hide'}
+anova_AUC1=ezANOVA(data = df2_noNA_AUC, wid=.(subid), dv=na.omit(logAUC), within  = .(donation, kinship), between = .(age_grp), type = 3, observed = .(age_grp)) #-> using  type=3 to emulate SPSS, indicate that age_grp is observed (rather than manipulated) to get more accurate eta_sq
 
-kable(anova_AUC2$ANOVA)
+kable(anova_AUC1$ANOVA)
+
+#Run with covariates
+anova_AUC2=ezANOVA(data = df2_noNA_AUC, wid=.(subid), dv=na.omit(logAUC), within  = .(donation, kinship), between = .(age_grp), between_covariates = .(gender, num_relatives, num_friends) ,type = 3, observed = .(age_grp))
+
+table_3b=kable(anova_AUC2$ANOVA, position='c', caption = "Table 3b: Age group X donation X kinship differences in log-transformed AUC values, controlling for gender, number of friends and number of relatives")
 ```
 
 **Table 3: Results of mixed-design ANOVA (age group X donation X kinship): Differences in log-transformed AUC values**
@@ -871,11 +891,11 @@ kable(anova_AUC2$ANOVA)
 *DFn= Degrees of freedom-numerator, DFd= degrees of freedom-denomenator, ges= Generalized eta squared measure of effect size- in this analysis it reflects the $\eta_p^2$ (due to the use of type III sum of squares)*
 
 
-As can be seen in table 3, Analysis of variance to detect differences in overall generosity as indicated by *AUC* values, did not reveal the expected main effect of age ($F_{(1,70)}$=2.835, *p*=0.097). In addition, the effect size ($\eta_p^2$=0.025) is smaller than that found in the original paper. However, the replication study was not powered to observe this effect, nor the success of the replication depend on it. Of note, we did not observe the interaction between age group, form of donation and kinship that allowed Gong et al. to explore pairwise comparisons in the original paper. In the replication study, the efect of this 3-way interaction is all but non-existant ($F_{(1,70)}$=0.062, *p*=0.8, $\eta_p^2$<0.001). 
+As can be seen in table 3, Analysis of variance to detect differences in overall generosity as indicated by *AUC* values, did not reveal the expected main effect of age ($F_{(1,70)}$=2.835, *p*=0.097). In addition, the effect size ($\eta_p^2$=0.025) is smaller than that found in the original paper. However, the replication study was not powered to observe this effect, nor the success of the replication depend on it. Of note, we did not observe the interaction between age group, form of donation and kinship that allowed Gong et al. to explore pairwise comparisons in the original paper. In the replication study, the efect of this 3-way interaction is all but non-existant ($F_{(1,70)}$=0.062, *p*=0.8, $\eta_p^2$<0.001). Unlike the older and younger samples in the original study,the replication study's age group samples differed in gender ratios and number of friends. Older adults reported having more close relatives in both samples, marking an additional age group difference. I ran the analysis controlling for these variables to account for the possibility that some of the differences between the original study and the replication study were due to difference between samples. Controlling for gender, number of important friends and number of important relatives did not change the pattern of results (see table 3b in the supplementary materials)
 
-I did, however, observe a significant age group X kinship interaction of small magnitude ($F_{(1,70)}$=4.569, *p*=0.036, $\eta_p^2$=0.015). This interaction suggests that despite the lack of overall difference in generosity, older and younger adults might differ in their willingess to donate to relatives compared to non-relatives, and that any such difference is not affected by the form of donation. Meaning, the main hypothesis of interest- that older adults are more generous than young adults when donating time to relatives, might still be observed. I therefore continued as planned with the post-hoc, one-sided, t-test comparing the log transformed *AUC* values of older and younger adults when donating their time to relatives.
+I did, however, observe a significant age group X kinship interaction of small magnitude ($F_{(1,70)}$=4.569, *p*=0.036, $\eta_p^2$=0.015). This interaction suggests that despite the lack of overall difference in generosity, older and younger adults might differ in their willingess to donate to relatives compared to non-relatives, and that any such difference is not affected by the form of donation. Meaning, the main hypothesis of interest- that older adults are more generous than young adults when donating time to relatives, might still find support in these data. I therefore continued as planned with the post-hoc, one-sided, t-test comparing the log transformed *AUC* values of older and younger adults when donating their time to relatives.
 
-```{r post hoc test of interest, include=TRUE, results='hide', error=FALSE, warning=FALSE}
+```{r post hoc test of interest, include=FALSE, results='hide', error=FALSE, warning=FALSE}
 #get the appropriate dataset
 
 df2_noNa_reltime=df2_noNA_AUC%>%filter(donation=="time", kinship=="rel")
@@ -894,8 +914,8 @@ mean_and_ci <- df2_noNA_AUC %>% #-> to get mean log(AUC) values and 95% C.Is in 
   group_by(age_grp, donation, kinship) %>% 
   summarise(n = n(),
             mean = mean(logAUC),
-            ci_lower = mean - (qt(0.975, df = n-1) * (sd(log(AUC))/sqrt(n))),
-            ci_upper = mean + (qt(0.975, df = n-1) * (sd(log(AUC))/sqrt(n)))) 
+            ci_lower = mean - (qt(0.975, df = n-1) * (sd(logAUC)/sqrt(n))),
+            ci_upper = mean + (qt(0.975, df = n-1) * (sd(logAUC)/sqrt(n)))) 
 mean_and_ci
 
 mean_and_ci$age_grp=as.factor(mean_and_ci$age_grp)
@@ -905,6 +925,7 @@ mean_and_ci$kinship=as.factor(mean_and_ci$kinship)
 
 #Plot- just t-test
 t_test_plot=ggplot(data = df2_noNA_AUC%>%filter(donation=='time' & kinship=='rel'), aes(x=age_grp, y=log(AUC),color=age_grp))+
+  scale_color_brewer(palette = "Set1")+
   geom_point(position="jitter",alpha=0.5)+
   stat_summary(fun.y = "mean", geom="bar", alpha=0.3)+
   ylim(4.3,8.7)+
@@ -920,6 +941,7 @@ t_test_plot
 
 AUC_plots=ggplot(data = df2_noNA_AUC, aes(x=age_grp, y=log(AUC),color=age_grp))+
   geom_point(position="jitter",alpha=0.5)+
+  scale_color_brewer(palette="Set1")+
   stat_summary(fun.y = "mean", geom="bar", alpha=0.3)+
   ylim(0,9)+
   geom_pointrange(data=mean_and_ci, aes(y=mean,ymin = ci_lower, ymax = ci_upper),color = "black",size=0.7, alpha=0.6)+
@@ -943,53 +965,99 @@ print(t_test_plot)
 
 *Thick black points represent the log-tranformed AUC value in each age group. Error bars represent 95% C.I around the mean, and colored dots are individual observations*
 
-As can be seen in figure 4 above, the mean log transformed *AUC* values of the two groups are nearly identical, and there seems to be considerable variation in individual values within each group. In sum, **the main result of interest failed to replicate in this study**. 
+As can be seen in figure 4 above, the mean log transformed *AUC* values of the two groups are nearly identical, and there seems to be considerable variation in individual values within each group (though more so for older, compared to younger, adults). Figure 4b (in supplementary materials) suggessts that the significant age group X Kinship interaction stems from the mean *AUC* values of younger adults being similar to that of older adults in donations to relatives, but higher in donations to non-relatives. In sum, **the main result of interest failed to replicate in this study**. In the commentary section, I detail a few possible explanations for the failure to replicate the original results in this analysis. 
 
-### Secondary analysis
-#### $\kappa$ values
+Of secondary interest, was the replication of differences in discount rate. The sample for the analysis of $\kappa$ values consisted of even fewer participants, as only 61 participants (32 older adults and 29 younger adults) had complete sets of $\kappa$ values across all 4 conditions. 
+
+#### Secondary analysis: $\kappa$ values
 ```{r k ANOVA, results='hide', error=FALSE, warning=FALSE}
 anova_k=ezANOVA(data = df2_noNA_k, wid=.(subid), dv=.(log_k), within  = .(donation, kinship), between = .(age_grp),observed = .(age_grp), type = 3) #-> type=3 to emulate SPSS, indicate that age_grp is observed (rather than manipulated) to get more accurate eta_sq
 
 print(anova_k) #-> comment main results (Gong et al. found sig. age_grp*donation interaction (as well as kinship*donation which is not of interest)
 ```
 
+As can be seen in table 4 below, the only significant effect found was a main effect of donation type ($F_{(1,59)}$=6.84, *p*=0.01), with a very small effect size ($\eta_p^2$=0.01). Gong et al. (2017) did not find a main effect of donation, but rather significant interaction of donation form with both kinship and age group. Following up on their significant interaction, the authors carried a series of pairwise comparisons and found that there was no difference in discounting for time donations regardless of kinship, but that older adults discounted money donation more so than yound adults, in both donation conditions. As was pre-registered, and despite not finding significant age group interactions, I carried the same tests on the replication dataset. 
 
-```{r k values post-hoc t-tests, results='hide', error=FALSE, warning=FALSE}
-#Gong et al found that there was no difference in discounting for time donations regardless of kinship, but that older adults discounted money donation more so than yound adults, in both donation conditions
+**Table 4: Results of mixed-design ANOVA (age group X donation X kinship): Differences in log-transformed $\kappa$ values**
+`r kable(anova_k$ANOVA, digits=2, align='c')`
+
+*DFn= Degrees of freedom-numerator, DFd= degrees of freedom-denomenator, ges= Generalized eta squared measure of effect size- in this analysis it reflects the $\eta_p^2$ (due to the use of type III sum of squares)*
+
+```{r k values post-hoc t-tests, include=F, results='hide', error=FALSE, warning=FALSE}
 
 #get the appropriate datasets-
-#df2_mr_crt=df2_time_crt%>%filter(donation=="mon", kinship=="rel")
-#df2_mnr_crt=df2_time_crt%>%filter(donation=="mon", kinship=="nonrel")
-#df2_tr_crt=df2_time_crt%>%filter(donation=="time", kinship=="rel")
-#df2_tnr_crt=df2_time_crt%>%filter(donation=="time", kinship=="nonrel")
+df2_mr_crt=df2_noNA_k%>%filter(donation=="mon", kinship=="rel")
+df2_mnr_crt=df2_noNA_k%>%filter(donation=="mon", kinship=="nonrel")
+df2_tr_crt=df2_noNA_k%>%filter(donation=="time", kinship=="rel")
+df2_tnr_crt=df2_noNA_k%>%filter(donation=="time", kinship=="nonrel")
 
 #Post-hoc comparison of interest, using Bonferroni.
-#n_comparisons=2*2 #-> (there are 4 possible comparisons: old-young in both donations and both kinships)
+n_comparisons=2*2 #-> (there are 4 possible comparisons: old-young in both donations and both kinships)
 
 ##run t.tests
 #money, relatives
-#t.2a=t.test(df2_mr_crt$log_k~df2_mr_crt$age_grp)
-#print(t.2a)
-#pt.2a=t.2a$p.value*n_comparisons
+t.2a=t.test(df2_mr_crt$log_k~df2_mr_crt$age_grp)
+print(t.2a)
+pt.2a=t.2a$p.value*n_comparisons
 
 #money, nonrelatives
-#t.2b=t.test(df2_mnr_crt$log_k~df2_mnr_crt$age_grp)
-#print(t.2b)
-#pt.2b=t.2b$p.value*n_comparisons
+t.2b=t.test(df2_mnr_crt$log_k~df2_mnr_crt$age_grp)
+print(t.2b)
+pt.2b=t.2b$p.value*n_comparisons
 
 #time, relatives
-#t.2c=t.test(df2_tr_crt$log_k~df2_tr_crt$age_grp)
-#print(t.2c)
-#pt.2c=t.2c$p.value*n_comparisons
+t.2c=t.test(df2_tr_crt$log_k~df2_tr_crt$age_grp)
+print(t.2c)
+pt.2c=t.2c$p.value*n_comparisons
 
 #time, nonrelatives
-#t.2d=t.test(df2_tnr_crt$log_k~df2_tnr_crt$age_grp)
-#print(t.2d)
-#pt.2d=t.2d$p.value*n_comparisons
+t.2d=t.test(df2_tnr_crt$log_k~df2_tnr_crt$age_grp)
+print(t.2d)
+pt.2d=t.2d$p.value*n_comparisons
+
+#Plots
+#get mean and C.I for each conditions
+#log AUC values, by age group for each donation*kinship condition
+mean_and_ci <- df2_noNA_k %>% #-> to get mean log(AUC) values and 95% C.Is in each condition
+  group_by(age_grp, donation, kinship) %>% 
+  summarise(n = n(),
+            mean = mean(log_k),
+            ci_lower = mean - (qt(0.975, df = n-1) * (sd(log_k)/sqrt(n))),
+            ci_upper = mean + (qt(0.975, df = n-1) * (sd(log_k)/sqrt(n)))) 
+mean_and_ci
+
+mean_and_ci$age_grp=as.factor(mean_and_ci$age_grp)
+mean_and_ci$donation=as.factor(mean_and_ci$donation)
+mean_and_ci$kinship=as.factor(mean_and_ci$kinship)
+
+k_plots=ggplot(data = df2_noNA_k, aes(x=age_grp, y=log_k,color=age_grp))+
+  geom_point(alpha=0.5)+
+  scale_color_brewer(palette = "Dark2")+
+  stat_summary(fun.y = "mean", geom="bar", alpha=0.3)+
+  geom_pointrange(data=mean_and_ci, aes(y=mean,ymin = ci_lower, ymax = ci_upper),color = "black",size=0.7, alpha=0.6)+
+  ggthemes::theme_few()+
+  theme(legend.position="none")+
+  ggtitle("Mean log-tranfromed k values by age group, donation type, and kinship")+
+  ylab("k values (log transformed)")+
+  xlab("Age group")+
+  facet_grid(donation~kinship)+
+  ggsave("k_plots.png")
+
+  k_plots
 ```
 
-#####Better analysis to test hypothesis- mixed effects linear model with planned orthogonal contrasts
-```{r lmer, warning=FALSE, message=FALSE, error=FALSE, results='hide'}
+T-tests comparing older and younger discount rates across the 4 conditions did not reveal any age group differences (all t-values between `r round(t.2d$statistic,2)` and `r round((t.2a$statistic,2)`, all *p's*>`r round((t.2a$p.value,2)`$_{(uncorrected)}$. Figure 5 (below) presents the means and distribution of individual $\kappa$ values across conditions. The figure suggests that the main effect of donation form is due to $\kappa$ values for monetary donations being larger, across age groups and kinship conditions. Since larger $\kappa$ values indicate steeper discounting, this findings suggest that individuals discount money more so than time when donating to others in their social network. That is, the difference in money donations from donation to person in position N to the person in position N+1 is larger than that of time donations.
+
+**Figure 5: log-transformed $\kappa$ values of older and younger adults, across donation forms and kinship conditions**
+
+`r print(k_plots)`
+
+*Thick black points represent the log-tranformed $\kappa$ value in each age group. Error bars represent 95% C.I around the mean, and colored dots are individual observations*
+
+####Secondary analysis- mixed effects linear model with planned orthogonal contrasts
+As a final planned analysis, I carried a mixed effects linear model to better deal with missing observations when assessing the effects of age group, donation form, and kinship on generosity (as measured by log-transformed *AUC* values). I first ran the model with all condition differences coded as (-1,1) to get the main effects (effects when other variables are at their mean level) of all predictors. I then proceeded with contrast coding designed to test the simple effect of age group when donating time to relatives.
+
+```{r lmer,include=F, warning=FALSE, message=FALSE, error=FALSE, results='hide'}
 #First set contrasts so that the intercept is the AUC value for older adults collapsing across donation and kinship conditions (to reflect the original "main" effect of age group)
 ## age group
 contrasts(df2$age_grp)
@@ -1003,9 +1071,11 @@ contrasts(df2$kinship)=cbind('"Main"'=c(-1,1)) #-> expecting participants to be 
 
 #Run lmer
 lmer1=lmer(data=df2, logAUC~age_grp*donation*kinship+(1|subid), REML = F) #-> fitting with ML because we are interested in getting accurate estimates fir the parameters.
+summary(lmer1)
 
 #Run lmer with covariates
 lmer2=lmer(data=df2, logAUC~age_grp*donation*kinship+gender+incm_lv+edu_lv+num_friends+num_relatives+(1|subid), REML = F)
+summary(lmer2)
 
 #Second-Set contrasts d=so that the intercept is the mean AUC for older adults, when donating time to relatives.
 #In this case, the simple effect of age is the t-test of interest: the difference between older and younger adults when donating time to relatives.
@@ -1022,16 +1092,144 @@ contrasts(df2$kinship)=cbind('"Non_relatives"'=c(1,0))
 
 #Run lmer
 lmer3=lmer(data=df2, logAUC~age_grp*donation*kinship+(1|subid), REML = F) #-> fitting with ML because we are interested in getting accurate estimates fir the parameters.
+summary(lmer3)
 
 #Run lmer with covariates
 lmer4=lmer(data=df2, logAUC~age_grp*donation*kinship+gender+incm_lv+edu_lv+num_friends+num_relatives+(1|subid), REML = F)
+summary(lmer4)
 
 kable(tidy(lmer1))
 kable(tidy(lmer3))
 ```
 
+Table 5 details the results of the "main" effects mixed-linear regression model, without assessing statistical significance. The results of this analysis, which includes participants with some missing data (for a total of 86 participants), are comperable to those obtained using ANOVA, with one notable difference: there was no evidence for a donation X kinship interaction. When computing degrees of freedom using Satterthwaite's approximations (in the package `lmerTest`), the statistics for the significant main effects of donation and kinship are: *b*=-0.25, $t_{(235.39)}$= -4.99, *p*<0.001, and *b*=0.48, $t_{(239.52)}$=9.45, *p*<0.001 respectively. The main effect of donation suggests that across age groups and kinship conditions, participants were more generous with their time, compared to their money. The main effect of kinship, however, was *qualified* by a significant kinship X age group interaction (*b*= -0.17, $t_{(239.52)}$= -3.44, *p*<0.001) suggesting that for younger adults the preference for relatives is weaker compared to older adults. These results held when controlling for gender, levels of education and income, and numbers of important friends and relatives.
 
+**Table 5: Mixed linear regression predicting log-tranformed AUC values by age group, donation form, and kinship**
 ```{r}
 kable(tidy(lmer1))
 ```
 
+*Random effects included individual intercepts, accounting for the possibility that some participants could be more generous for reasons not captured by the model*
+
+Table 6 presents the results from the mixed linear model in which the intercept represent the mean log-AUC value for older adult, when donating time to relatives. The simple effect of age in this model, constitutes an additional test for the main result of interest for this replication. Like in the analysis using ANOVA, here too I do not find support for the hypothesis suggested by Gong et al., that older adults are more generous than young adults when donating time to relatives (*b*=0.008, $t_{(192.73)}$=0.03, *p*=0.98).
+
+The main effects of donation and kinship reported above hold for older adults, suggesting that they are willing to donate less money (compared to time) to relatives (*b*= -0.46, $t_{(234.95)}$= -2.37, *p*=0.02), and willing to donate less time to non-relatives compared to relatives (*b*= -1.21, $t_{(237.49)}$= -6.12, *p*<0.001). Young adults, compared to older adults, are willing more time to their non-relatives (*b*=0.72, $t_{(236.75)}$=2.54, *p*=0.02). 
+
+**Table 6: Mixed linear regression predicting log-tranformed AUC values by age group, donation form, and kinship**
+```{r lmer2, warning=FALSE, message=FALSE, error=FALSE, results='hide'}
+kable(tidy(lmer3))
+```
+
+*Random effects included individual intercepts, accounting for the possibility that some participants could be more generous for reasons not captured by the model*
+
+###Exploratory analyses
+
+One important diference between the replication attempt and the original study is that the original smaple consisted of Hong Kong Chinese, and the replication sample consisted of only people located in the U.S. For that reason, it is important to test whether the results detailed above hold when accounting for differences in race and ethnicity, and to test whether any of the effects found above are moderated by race and ethnicity. I therefore ran both mixed effects linear regression model with an interaction term for race/ ethnicity (without controlling for other variables). To simplify the analysis, the variable "race" was recoded to compare European-Americans to other ethnicities/races.
+
+```{r, include=FALSE}
+#recode 'race'
+df2$race_bin=recode(df2$race, "'European-American (White)'='white'; else='non-white'", as.factor.result = T)
+
+df2%>%group_by(race_bin,kinship,donation,age_grp)%>%summarise(n=n())%>%ungroup()#-> 19 non-white (2 old, 19 young), 71 white (45 old, 26 young).
+
+chi_race=chisq.test(df2$age_grp, df2$race_bin, correct = F)
+
+contrasts(df2$race_bin)=cbind("non-white"=c(1,0))
+contrasts(df2$race_bin)
+
+
+## age group
+contrasts(df2$age_grp)
+contrasts(df2$age_grp)=cbind('"Main"'=c(-1,1))#-> expecting older adults to be less generous overall, as was found in Gong et al.
+## donation
+contrasts(df2$donation)
+contrasts(df2$donation)=cbind('"Main"'=c(1,-1)) #-> expecting participants to be more generous with money over time
+## kinship
+contrasts(df2$kinship)
+contrasts(df2$kinship)=cbind('"Main"'=c(-1,1)) #-> expecting participants to be more generous to relatives over non-relatives
+
+#Run lmer
+lmer5=lmer(data=df2, logAUC~age_grp*donation*kinship+race_bin+(1|subid), REML = F) #-> fitting with ML because we are interested in getting accurate estimates fir the parameters.
+summary(lmer5)
+
+lmer6=lmer(data=df2, logAUC~age_grp*donation*kinship*race_bin+(1|subid), REML = F) #-> fitting with ML because we are interested in getting accurate estimates fir the parameters.
+summary(lmer6)
+
+#Second-Set contrasts d=so that the intercept is the mean AUC for older adults, when donating time to relatives.
+#In this case, the simple effect of age is the t-test of interest: the difference between older and younger adults when donating time to relatives.
+
+## age group
+contrasts(df2$age_grp)
+contrasts(df2$age_grp)=cbind('"Young"'=c(0,1))
+## donation
+contrasts(df2$donation)
+contrasts(df2$donation)=cbind('"Money"'=c(1,0))
+## kinship
+contrasts(df2$kinship) #current intercept: old/mon/nonrel
+contrasts(df2$kinship)=cbind('"Non_relatives"'=c(1,0))
+
+#Run lmer
+lmer7=lmer(data=df2, logAUC~age_grp*donation*kinship+race_bin+(1|subid), REML = F) #-> fitting with ML because we are interested in getting accurate estimates fir the parameters.
+summary(lmer7)
+
+lmer8=lmer(data=df2, logAUC~age_grp*donation*kinship*race_bin+(1|subid), REML = F) #-> fitting with ML because we are interested in getting accurate estimates fir the parameters.
+summary(lmer8)
+```
+
+At first, a $\chi^2$ contingency test reveald that the ratio of white to non-white participants was different between the young and old samples ($\chi^2_{(1)}$= `r round(chi_race$statistic, 2)`, *p*<0.001). I therefore first ran the mixed linear models controlling for race, and found that the results were effictively unchanged. 
+
+In general, this was true when including race as an interaction term with one notebale difference:
+when including race as an interaction term, the "main" effect of age group was significant among the white participants (*b*=0.27, $t_{(83.83)}$= 2.2, *p*=0.03), suggesting that among European-Americans, younger adults were indeed more generous- as was found in the original paper among Hong Kong Chinese. The interaction between the "main" effect of age group and race was not found to be significant. The lack of significant interaction, coupled with the lack of age_group effect when not accounting for race, suggest to me that the age effect among European-Americans might be a spourious finding and likely caused by the fact that there are many more European Americans in the older adult sample. 
+
+
+## Discussion
+
+### Summary of Replication Attempt
+
+This replication study attempted to replicate findings by Gong et al. (2017) that in a hypothetical donation task to relatives and non-relatives of varied degrees of closensess, older adults are overall less generous than young adults, but that when donating time to relatives this pattern is reversed. I did not find any evidence in support of either effect in this study. I employed two different analysis techniques: Mixed-design ANOVA (as used in the original study) and a mixed-effects linear regression which is more robust to missing data, yet neither revealed the anticipated effects. In addition, I was interested in attempting to replicate results regarding social discount rates- that older adults discount monetary donations more than young adults. Again, I did not find support for differences between age groups in social discounting rates. **I am therefore inclined to deem this replication attempt a failure**.
+
+### Commentary
+
+The replication attempt was reasonably powered, yet 
+
+*Likely not due to lack of power (effect size really small and if anything- in the opposite direction)
+*Not because of "simple" sample differences
+*Can not really be accounted for by differences between \$U.S and \$H.K, but possible
+*Culture?
+*Not including cognitive testing?
+
+Add open-ended commentary (if any) reflecting (a) insights from follow-up exploratory analysis, (b) assessment of the meaning of the replication (or not) - e.g., for a failure to replicate, are the differences between original and present study ones that definitely, plausibly, or are unlikely to have been moderators of the result, and (c) discussion of any objections or challenges raised by the current and original authors about the replication attempt.  None of these need to be long.
+
+
+
+###Supplementary materials
+
+```{r individual fit curves, echo=F, message=F, error=F, warning=FALSE}
+#generate a random sample of 10 young and 10 old participants
+k_v_var=df2%>%group_by(subid)%>%summarise(k_var=var(k), V_var=var(V))%>%ungroup()%>%gather(parameter, var, c(k_var, V_var))
+
+ggplot(data = k_v_var%>%filter(parameter=='V_var'), aes(x=subid, y=var))+
+  geom_bar(stat = "identity")+
+  xlab("Participant ID")+
+  ylab("Variance across conditions")+
+  ggtitle("Figure sup1: Individual varaince in V values")
+
+ggplot(data = k_v_var%>%filter(parameter=='k_var'), aes(x=subid, y=var))+
+  geom_bar(stat = "identity")+
+  xlab("Participant ID")+
+  ylab("Variance across conditions")+
+  ggtitle("Figure sup2: Individual varaince in k values")
+```
+
+
+
+**Table 3b: Age group X donation X kinship differences in log-transformed AUC values, controlling for gender, number of friends and number of relatives**
+```{r}
+kable(anova_AUC2$ANOVA, position='c')
+```
+
+**Figure 4b: log-transformed AUC values of older and younger adults, across donation forms and kinship conditions**
+
+`r print(AUC_plots)`
+
+*Thick black points represent the log-tranformed AUC value in each age group. Error bars represent 95% C.I around the mean, and colored dots are individual observations*
